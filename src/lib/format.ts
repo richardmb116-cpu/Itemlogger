@@ -31,3 +31,9 @@ export function parsePrice(input: string): number | null {
   const value = Number.parseFloat(cleaned);
   return Number.isFinite(value) ? Math.round(value * 100) / 100 : null;
 }
+
+/** "Feb 2029" (US) / "Feb 2029" (AU), for dates that only need month precision. */
+export function formatMonthYear(iso: string, region: TaxRegion): string {
+  const { locale } = currencyFor(region);
+  return parseISODate(iso).toLocaleDateString(locale, { month: 'short', year: 'numeric' });
+}

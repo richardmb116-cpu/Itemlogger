@@ -28,6 +28,15 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 - **Item ages and birthdays**: every item shows how old it is. On each purchase anniversary you get a
   9 am "Happy 1st birthday" notification with what it's worth now, plus a card on Home and a banner on
   the item page. Switch off in Settings → Item birthdays.
+- **Best time to sell (upgrade planner)**: for each item the app models resale value over its whole life
+  (`src/lib/lifecycle.ts`): category curve, typical useful life (phone ~4 yrs, laptop ~5, vacuum ~8,
+  chair ~12…), an end-of-life drop as it nears that age, a boost for brands that hold value (Apple,
+  Herman Miller, Makita…), and calibration to any price you checked. `src/lib/upgrade.ts` then finds where
+  *next year's loss in value* overtakes *your average yearly cost of owning it so far*: the best time to
+  sell and put the money toward the next one. Items that lose most value early get "use it until it's
+  done". Shown on the Sell screen (chart, with a "The maths" view of the two lines crossing), on the item
+  page, and as a "Ready to upgrade" shelf on Home. Timing tips only where there's evidence (launch cycles,
+  seasonal sports gear).
 - **Real price checks**: one tap opens eBay sold listings, Facebook Marketplace or Gumtree (AU) searches for
   the item's make and model. Enter what you see as "your price" and it replaces the estimate everywhere,
   flagged for a re-check after 90 days. No scraping, API keys or running costs.

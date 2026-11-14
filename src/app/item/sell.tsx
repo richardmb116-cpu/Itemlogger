@@ -6,6 +6,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleShee
 
 import { ItemThumb } from '@/components/item-bits';
 import { LinkRow } from '@/components/link-row';
+import { SellAdvice } from '@/components/sell-advice';
 import { AppText, PrimaryButton, Row, Section } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { todayISO } from '@/lib/dates';
@@ -13,6 +14,7 @@ import { formatMoney, parsePrice } from '@/lib/format';
 import { buildListing, listingText } from '@/lib/listing';
 import { marketLinks, searchQuery, type MarketLink } from '@/lib/market-links';
 import { useStore } from '@/lib/store';
+import { sellPlan } from '@/lib/upgrade';
 import {
   checkedAgo,
   conditionInfo,
@@ -79,6 +81,7 @@ export default function SellScreen() {
 
   const text = listingText({ title, body });
   const curve = CURVES[item.category];
+  const plan = sellPlan(item, region);
   const links = marketLinks(item, region);
   const myPriceValue = parsePrice(myPrice);
 
@@ -203,6 +206,8 @@ export default function SellScreen() {
             />
           </Section>
         )}
+
+        {plan ? <SellAdvice plan={plan} item={item} region={region} /> : null}
 
         {/* Free price checks: open real listings, then type in what you see */}
         <Section

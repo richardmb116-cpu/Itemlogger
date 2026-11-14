@@ -11,11 +11,12 @@ import { AppText, GlassButton, PillButton, Row, Section } from '@/components/ui'
 import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
 import { ageOf, nextBirthday, ordinal } from '@/lib/birthdays';
 import { categoryInfo } from '@/lib/categories';
-import { formatDate, formatMoney } from '@/lib/format';
+import { formatDate, formatMoney, formatMonthYear } from '@/lib/format';
 import { todayISO, toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
 import { itemPhoto, photoSource } from '@/lib/photos';
 import { useStore } from '@/lib/store';
+import { sellPlan } from '@/lib/upgrade';
 import { deductionFor, depreciationSchedule } from '@/lib/depreciation';
 import { taxYearByEnd, taxYearFor } from '@/lib/tax';
 import { checkedAgo, currentValue } from '@/lib/valuation';
@@ -40,6 +41,7 @@ export default function ItemDetailScreen() {
   const region = settings.taxRegion;
   const cat = categoryInfo(item.category);
   const photo = itemPhoto(item);
+  const plan = item.sold ? null : sellPlan(item, region);
   const age = ageOf(item.purchaseDate);
   const birthday = nextBirthday(item.purchaseDate);
   const birthdayToday = !item.sold && birthday.daysUntil === 0;
@@ -180,6 +182,20 @@ export default function ItemDetailScreen() {
             {lostShare != null ? (
               <View style={[styles.track, { backgroundColor: 'rgba(127,127,127,0.35)' }]}>
                 <View style={[styles.trackFill, { width: `${Math.round((1 - lostShare) * 100)}%`, backgroundColor: c.onInk }]} />
+              </View>
+            ) : null}
+            {plan ? (
+              <View style={styles.bestRow}>
+                <View style={[styles.bestDot, { backgroundColor: plan.status === 'window' ? c.green : plan.status === 'late' ? c.orange : c.onInk }]} />
+                <AppText variant="footnote" color={c.onInk} style={{ opacity: 0.85, fontWeight: '600' }}>
+                  {plan.status === 'use-up'
+                    ? 'Best plan: use it until it’s done'
+                    : plan.status === 'early'
+                      ? `Best time to sell: around ${formatMonthYear(plan.bestDate, region)}`
+                      : plan.status === 'window'
+                        ? 'Good time to sell now'
+                        : 'Past its best time to sell'}
+                </AppText>
               </View>
             ) : null}
           </Pressable>
@@ -377,6 +393,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: OnPhoto.glassBorder,
   },
+  bestRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  bestDot: { width: 7, height: 7, borderRadius: 4 },
   birthday: {
     flexDirection: 'row',
     alignItems: 'center',

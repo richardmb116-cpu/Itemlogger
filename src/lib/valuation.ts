@@ -2,24 +2,9 @@ import { daysBetween, parseISODate } from './dates';
 import type { Category, Condition, Item } from './types';
 import { warrantyStatus } from './warranty';
 
-/**
- * How second-hand prices typically fall for each kind of item, as a share of the price paid:
- *  - firstDrop: lost as soon as it's "used" (opened, out of the shop)
- *  - perYear:   further share lost each year after that (compounding)
- *  - floor:     a used one rarely sells for less than this, however old
- * Rough rules of thumb from resale marketplaces, not live prices.
- */
-export const CURVES: Record<Category, { firstDrop: number; perYear: number; floor: number; note: string }> = {
-  electronics: { firstDrop: 0.2, perYear: 0.22, floor: 0.08, note: 'Electronics lose value fast as new models come out' },
-  appliances: { firstDrop: 0.2, perYear: 0.12, floor: 0.1, note: 'Appliances drop on purchase, then hold steady' },
-  furniture: { firstDrop: 0.35, perYear: 0.08, floor: 0.15, note: 'Furniture drops a lot at first, then holds steady' },
-  tools: { firstDrop: 0.2, perYear: 0.08, floor: 0.25, note: 'Good tools hold their value well' },
-  kitchen: { firstDrop: 0.25, perYear: 0.12, floor: 0.1, note: 'Kitchen gear drops on purchase, then slowly' },
-  jewellery: { firstDrop: 0.4, perYear: 0.02, floor: 0.4, note: 'Jewellery sells well below retail, then holds steady' },
-  sports: { firstDrop: 0.25, perYear: 0.12, floor: 0.12, note: 'Sports gear loses value steadily with use' },
-  clothing: { firstDrop: 0.55, perYear: 0.25, floor: 0.05, note: 'Clothing resells for a fraction of retail' },
-  other: { firstDrop: 0.25, perYear: 0.15, floor: 0.1, note: 'A typical resale curve for household items' },
-};
+import { CURVES, fractionAt, profileFor } from './lifecycle';
+
+export { CURVES } from './lifecycle';
 
 export const CONDITIONS: { id: Condition; label: string; factor: number; listing: string }[] = [
   { id: 'like-new', label: 'Like new', factor: 1.1, listing: 'In like-new condition, barely used.' },
@@ -35,6 +20,13 @@ export function conditionInfo(id: Condition) {
 /** Buyers pay a little more when the warranty still has time to run. */
 export const WARRANTY_BONUS = 0.05;
 
+/** The warranty premium at a given age: full with a year or more left, fading to nothing as it runs out. */
+export function warrantyBonusAt(item: Pick<Item, 'warrantyMonths'>, years: number): number {
+  if (!item.warrantyMonths) return 0;
+  const remaining = item.warrantyMonths / 12 - years;
+  return WARRANTY_BONUS * Math.min(1, Math.max(0, remaining));
+}
+
 export type Valuation = {
   /** Most likely second-hand price today. */
   estimate: number;
@@ -49,11 +41,39 @@ export type Valuation = {
   warrantyBonus: boolean;
 };
 
-/** Value of one unit of purchase price after `years`, in good condition. */
+/** The basic category curve (no useful-life cliff or brand effect). Kept for reference and tests. */
 export function curveAt(category: Category, years: number): number {
   const curve = CURVES[category];
   const share = (1 - curve.firstDrop) * Math.pow(1 - curve.perYear, Math.max(0, years));
   return Math.max(curve.floor, share);
+}
+
+type ValueItem = Pick<Item, 'name' | 'model' | 'price' | 'purchaseDate' | 'category' | 'condition' | 'warrantyMonths'>;
+
+/**
+ * How far a price the user checked sits from the model, as a multiplier on the whole curve.
+ * 1 when there's no checked price. Clamped so one odd listing can't distort everything.
+ */
+export function calibration(item: ValueItem & Pick<Item, 'checkedPrice'>): number {
+  if (!item.checkedPrice || !item.price) return 1;
+  const ageAtCheck = Math.max(0, daysBetween(parseISODate(item.purchaseDate), parseISODate(item.checkedPrice.checkedAt)) / 365.25);
+  // Compare like with like: the uncalibrated model at the age it was checked.
+  const modelled = valueAt(item, ageAtCheck);
+  if (modelled <= 0) return 1;
+  return Math.min(2.5, Math.max(0.3, item.checkedPrice.amount / modelled));
+}
+
+/** Expected resale value at a given age in years (unrounded), optionally calibrated to a checked price. */
+export function valueAt(
+  item: ValueItem & Partial<Pick<Item, 'checkedPrice'>>,
+  years: number,
+  opts: { calibrate?: boolean } = {},
+): number {
+  if (item.price == null || item.price <= 0) return 0;
+  const k = opts.calibrate && item.checkedPrice ? calibration({ ...item, checkedPrice: item.checkedPrice }) : 1;
+  const raw =
+    item.price * fractionAt(profileFor(item), years) * conditionInfo(item.condition).factor * (1 + warrantyBonusAt(item, years)) * k;
+  return Math.min(item.price, raw);
 }
 
 /** Round to amounts people actually ask for: $5 steps under $200, $10 under $1,000, then $50. */
@@ -62,20 +82,18 @@ export function roundPrice(value: number): number {
   return Math.max(step, Math.round(value / step) * step);
 }
 
-export function valueItem(
-  item: Pick<Item, 'price' | 'purchaseDate' | 'category' | 'condition' | 'warrantyMonths'>,
-  today = new Date(),
-): Valuation | null {
+export function valueItem(item: ValueItem, today = new Date()): Valuation | null {
   if (item.price == null || item.price <= 0) return null;
   const ageYears = Math.max(0, daysBetween(parseISODate(item.purchaseDate), today) / 365.25);
   const warranty = warrantyStatus(item, today);
   const warrantyBonus = warranty.state === 'active' || warranty.state === 'expiring';
-  const factor = conditionInfo(item.condition).factor * (warrantyBonus ? 1 + WARRANTY_BONUS : 1);
+  const p = profileFor(item);
+  const factor = conditionInfo(item.condition).factor * (1 + warrantyBonusAt(item, ageYears));
 
   // Never estimate more than the price paid, however good the condition.
-  const raw = Math.min(item.price, item.price * curveAt(item.category, ageYears) * factor);
+  const raw = Math.min(item.price, item.price * fractionAt(p, ageYears) * factor);
   const estimate = roundPrice(raw);
-  const inAYear = roundPrice(Math.min(item.price, item.price * curveAt(item.category, ageYears + 1) * conditionInfo(item.condition).factor));
+  const inAYear = roundPrice(valueAt(item, ageYears + 1));
   const lost = Math.max(0, item.price - estimate);
 
   return {
@@ -120,7 +138,7 @@ export type CurrentValue = {
 
 /** What the item is worth now: the user's checked price if they have one, otherwise our estimate. */
 export function currentValue(
-  item: Pick<Item, 'price' | 'purchaseDate' | 'category' | 'condition' | 'warrantyMonths' | 'checkedPrice'>,
+  item: ValueItem & Pick<Item, 'checkedPrice'>,
   today = new Date(),
 ): CurrentValue | null {
   const valuation = valueItem(item, today);

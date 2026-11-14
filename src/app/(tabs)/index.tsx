@@ -15,6 +15,7 @@ import { formatMoney } from '@/lib/format';
 import { CATEGORY_PHOTOS, HOME_HERO_PHOTO } from '@/lib/photos';
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { sortItems, useStore } from '@/lib/store';
+import { sellPlan } from '@/lib/upgrade';
 import { currencyFor } from '@/lib/tax';
 import type { Category, ItemUse } from '@/lib/types';
 import { useEnableReminders } from '@/lib/use-reminders';
@@ -56,6 +57,11 @@ export default function ItemsScreen() {
   const worth = owned.reduce((sum, i) => sum + (values.get(i.id) ?? 0), 0);
   const workCount = owned.filter((i) => i.use === 'work').length;
   const birthdays = upcomingBirthdays(owned, 7);
+  const readyToSell = owned
+    .map((item) => ({ item, plan: sellPlan(item, region) }))
+    .filter((r): r is { item: (typeof owned)[number]; plan: NonNullable<ReturnType<typeof sellPlan>> } =>
+      !!r.plan && (r.plan.status === 'window' || r.plan.status === 'late'),
+    );
   const usedCategories = CATEGORIES.filter((cat) => owned.some((i) => i.category === cat.id));
 
   const q = query.trim().toLowerCase();
@@ -260,6 +266,24 @@ export default function ItemsScreen() {
                 </Pressable>
               ))}
             </View>
+          ) : null}
+
+          {/* Ready to upgrade: items in or past their best time to sell */}
+          {readyToSell.length > 0 && !category && !use ? (
+            <>
+              <SectionHeading title="Ready to upgrade" />
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
+                {readyToSell.map(({ item, plan }) => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    detail={`${plan.status === 'window' ? 'Good time to sell' : 'Past its best time'} · ~${formatMoney(plan.nowValue, region, { cents: false })}`}
+                    action="See value"
+                    onPress={() => router.push({ pathname: '/item/sell', params: { id: item.id } })}
+                  />
+                ))}
+              </ScrollView>
+            </>
           ) : null}
 
           {/* Expiring shelf */}
