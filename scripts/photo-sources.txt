@@ -1,0 +1,19 @@
+# Bundled photos (Unsplash License). File -> https://unsplash.com/photos/<id>
+welcome-home        1600585154340-be6161a56a0c
+welcome-warranty    1556911220-bff31c812dba
+welcome-insurance   1586023492125-27b2c045efd7
+welcome-sell        1505740420928-5e560c06d30e
+welcome-tax         1593642632559-0c6d3fc62b89
+home-hero           1556228453-efd6c1ff04f6
+cat-electronics     1496181133206-80ce9b88a853
+cat-appliances      1570222094114-d054a817e56b
+cat-furniture       1580480055273-228ff5388ef8
+cat-tools           1504148455328-c376907d081c
+cat-kitchen         1556911220-bff31c812dba
+cat-jewellery       1523275335684-37898b6baf30
+cat-sports          1485965120184-e220f721d03e
+cat-clothing        1489987707025-afc232f7ea0f
+cat-other           1519710164239-da123dc03ef4
+sample-laptop       1525547719571-a2d4ac8945e2
+sample-headphones   1505740420928-5e560c06d30e
+sample-sofa         1555041469-a586c61ea9bc

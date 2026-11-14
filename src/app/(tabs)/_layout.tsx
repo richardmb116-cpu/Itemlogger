@@ -1,11 +1,15 @@
+import { Redirect } from 'expo-router';
 import { NativeTabs } from 'expo-router/native-tabs';
 
 import { useColors } from '@/constants/theme';
+import { useStore } from '@/lib/store';
 
 export default function TabsLayout() {
   const c = useColors();
+  const { settings } = useStore();
+  if (!settings.onboarded) return <Redirect href="/welcome" />;
   return (
-    <NativeTabs tintColor={c.accent}>
+    <NativeTabs tintColor={c.ink}>
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Items</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'shippingbox', selected: 'shippingbox.fill' }} />

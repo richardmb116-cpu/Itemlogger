@@ -75,7 +75,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <ScreenTitle title="Settings" />
+        <ScreenTitle eyebrow="Itemlogger" title="Settings" />
 
         <Section
           title="Country"
@@ -234,6 +234,15 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="About">
+          <Row
+            label="Show welcome again"
+            icon="sparkles-outline"
+            chevron
+            onPress={() => {
+              updateSettings({ onboarded: false });
+              router.replace('/welcome');
+            }}
+          />
           <Row label="Version" value={Constants.expoConfig?.version ?? '1.0.0'} last />
         </Section>
       </ScrollView>

@@ -4,6 +4,7 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 
 import type { ClaimImages, ClaimOptions } from './claim-pack';
+import { fileUriFor } from './photos';
 import type { Item } from './types';
 
 /** Web preview can render the pack but not save a PDF; the iPhone app can. */
@@ -12,8 +13,10 @@ export const canExportPdf = true;
 const MAX_WIDTH = 1000;
 
 /** Shrink a photo and turn it into a data URI, so the PDF stays a sensible size to email. */
-async function embed(uri: string): Promise<string | undefined> {
+async function embed(stored: string): Promise<string | undefined> {
   try {
+    const uri = await fileUriFor(stored);
+    if (!uri) return undefined;
     const rendered = await ImageManipulator.manipulate(uri).resize({ width: MAX_WIDTH }).renderAsync();
     const saved = await rendered.saveAsync({ base64: true, compress: 0.6, format: SaveFormat.JPEG });
     return saved.base64 ? `data:image/jpeg;base64,${saved.base64}` : undefined;

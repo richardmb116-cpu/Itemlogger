@@ -1,5 +1,6 @@
 /** Browser preview: show the pack on screen; saving a PDF needs the iPhone app. */
 import type { ClaimImages, ClaimOptions } from './claim-pack';
+import { fileUriFor } from './photos';
 import type { Item } from './types';
 
 export const canExportPdf = false;
@@ -8,8 +9,8 @@ export async function prepareImages(items: Item[], options: ClaimOptions): Promi
   const images: ClaimImages = {};
   for (const item of items) {
     images[item.id] = {
-      photo: options.includePhotos ? (item.photoUri ?? undefined) : undefined,
-      receipt: options.includeReceipts ? (item.receiptUri ?? undefined) : undefined,
+      photo: options.includePhotos && item.photoUri ? ((await fileUriFor(item.photoUri)) ?? undefined) : undefined,
+      receipt: options.includeReceipts && item.receiptUri ? ((await fileUriFor(item.receiptUri)) ?? undefined) : undefined,
     };
   }
   return images;

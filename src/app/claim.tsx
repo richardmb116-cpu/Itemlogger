@@ -82,7 +82,7 @@ export default function ClaimPackScreen() {
           title: 'Claim pack',
           headerLeft: () => (
             <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10} style={{ paddingHorizontal: 6 }}>
-              <AppText color={c.accent}>Close</AppText>
+              <AppText color={c.ink} style={{ fontWeight: '600' }}>Close</AppText>
             </Pressable>
           ),
         }}
@@ -199,7 +199,7 @@ export default function ClaimPackScreen() {
                   toggle(item.id);
                 }}
                 style={[styles.pickRow, idx < owned.length - 1 && { borderBottomColor: c.separator, borderBottomWidth: StyleSheet.hairlineWidth }]}>
-                <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? c.accent : c.textTertiary} />
+                <Ionicons name={on ? 'checkmark-circle' : 'ellipse-outline'} size={24} color={on ? c.ink : c.textTertiary} />
                 <ItemThumb item={item} size={40} onTile />
                 <View style={{ flex: 1 }}>
                   <AppText numberOfLines={1}>{item.name}</AppText>
@@ -216,7 +216,7 @@ export default function ClaimPackScreen() {
         <View style={styles.actions}>
           {busy ? (
             <View style={styles.busy}>
-              <ActivityIndicator color={c.accent} />
+              <ActivityIndicator color={c.ink} />
               <AppText color={c.textSecondary}>Preparing photos and receipts…</AppText>
             </View>
           ) : (
@@ -257,7 +257,7 @@ function Stat({ icon, label, value }: { icon: 'receipt-outline' | 'camera-outlin
   const c = useColors();
   return (
     <View style={[styles.stat, { backgroundColor: c.raised }]}>
-      <Ionicons name={icon} size={18} color={c.accent} />
+      <Ionicons name={icon} size={18} color={c.ink} />
       <AppText variant="subhead" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }}>
         {value}
       </AppText>

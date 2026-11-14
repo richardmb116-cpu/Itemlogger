@@ -16,6 +16,7 @@ function item(over: Partial<Item>): Item {
 }
 
 const settings: Settings = {
+  onboarded: true,
   taxRegion: 'AU',
   depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
   insurance: { insurer: 'Acme Insurance', policyNumber: 'HC-123', sumInsured: 2500 },

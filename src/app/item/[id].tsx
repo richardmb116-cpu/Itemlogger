@@ -1,20 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useState, type ComponentProps } from 'react';
 import { Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { warrantyColors } from '@/components/item-bits';
-import { AppText, PillButton, Row, Section } from '@/components/ui';
-import { Radius, Spacing, useColors } from '@/constants/theme';
+import { AppText, GlassButton, PillButton, Row, Section } from '@/components/ui';
+import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
 import { categoryInfo } from '@/lib/categories';
 import { formatDate, formatMoney } from '@/lib/format';
-import { toISODate } from '@/lib/dates';
+import { todayISO, toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
+import { itemPhoto, photoSource } from '@/lib/photos';
 import { useStore } from '@/lib/store';
 import { deductionFor, depreciationSchedule } from '@/lib/depreciation';
-import { todayISO } from '@/lib/dates';
 import { taxYearByEnd, taxYearFor } from '@/lib/tax';
 import { checkedAgo, currentValue } from '@/lib/valuation';
 import { warrantyLengthLabel, warrantyStatus } from '@/lib/warranty';
@@ -37,6 +38,7 @@ export default function ItemDetailScreen() {
 
   const region = settings.taxRegion;
   const cat = categoryInfo(item.category);
+  const photo = itemPhoto(item);
   const status = warrantyStatus(item);
   const col = warrantyColors(status.state, c);
   const taxYear = taxYearFor(item.purchaseDate, region);
@@ -72,26 +74,42 @@ export default function ItemDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: c.background }}>
-      <Stack.Screen options={{ title: '' }} />
-      <ScrollView contentContainerStyle={{ paddingBottom: 110 + insets.bottom }}>
-        {/* Product image on a soft grey tile */}
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView contentContainerStyle={{ paddingBottom: 110 + insets.bottom }} contentInsetAdjustmentBehavior="never">
+        {/* Full-bleed photo, like a showroom */}
         <Pressable
-          disabled={!item.photoUri}
-          onPress={() => setViewer(item.photoUri)}
-          accessibilityLabel="View photo"
-          style={[styles.hero, { backgroundColor: c.card }]}>
-          {item.photoUri ? (
-            <Image source={{ uri: item.photoUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
-          ) : (
-            <Ionicons name={cat.icon} size={96} color={c.textSecondary} />
-          )}
+          onPress={() => item.photoUri && setViewer(item.photoUri)}
+          accessibilityLabel={item.photoUri ? 'View photo' : undefined}
+          style={[styles.hero, { height: 420 + insets.top }]}>
+          <Image source={photo.source} style={StyleSheet.absoluteFill} contentFit="cover" transition={250} />
+          <LinearGradient
+            colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0)', 'rgba(0,0,0,0.25)']}
+            locations={[0, 0.3, 0.75, 1]}
+            style={StyleSheet.absoluteFill}
+          />
+          {!photo.isOwn ? (
+            <View style={[styles.addPhoto, { bottom: 48 }]}>
+              <Ionicons name="camera" size={13} color={OnPhoto.text} />
+              <AppText variant="caption" color={OnPhoto.text} style={{ fontWeight: '600' }}>
+                Category photo · tap Edit to add yours
+              </AppText>
+            </View>
+          ) : null}
         </Pressable>
+        <View style={[styles.topControls, { top: insets.top + Spacing.sm }]} pointerEvents="box-none">
+          <GlassButton icon="chevron-back" label="Back" onPress={() => router.back()} />
+          <GlassButton icon="create-outline" label="Edit item" onPress={edit} />
+        </View>
 
+        <View style={[styles.sheet, { backgroundColor: c.background }]}>
         <View style={styles.headline}>
+          <AppText variant="eyebrow" color={c.textSecondary}>
+            {cat.label}
+            {item.model ? ` · ${item.model}` : ''}
+          </AppText>
           <AppText style={styles.title}>{item.name}</AppText>
           <AppText variant="subhead" color={c.textSecondary}>
-            {cat.label}
-            {item.store ? ` · Bought at ${item.store}` : ''}
+            {item.store ? `Bought at ${item.store}` : 'Purchase details below'}
           </AppText>
         </View>
 
@@ -120,14 +138,16 @@ export default function ItemDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="See resale estimate"
             onPress={sell}
-            style={({ pressed }) => [styles.warrantyCard, { backgroundColor: c.card, opacity: pressed ? 0.8 : 1 }]}>
+            style={({ pressed }) => [styles.warrantyCard, { backgroundColor: c.ink, transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
             <View style={styles.warrantyTop}>
-              <View style={[styles.warrantyIcon, { backgroundColor: c.accentSoft }]}>
-                <Ionicons name="pricetag" size={20} color={c.accent} />
+              <View style={[styles.warrantyIcon, { backgroundColor: 'rgba(127,127,127,0.25)' }]}>
+                <Ionicons name="pricetag" size={20} color={c.onInk} />
               </View>
               <View style={{ flex: 1 }}>
-                <AppText variant="headline">Worth about {formatMoney(value.amount, region)}</AppText>
-                <AppText variant="footnote" color={value.stale ? c.orange : c.textSecondary}>
+                <AppText variant="title3" color={c.onInk}>
+                  Worth about {formatMoney(value.amount, region)}
+                </AppText>
+                <AppText variant="footnote" color={c.onInk} style={{ opacity: value.stale ? 1 : 0.7 }}>
                   {value.source === 'checked'
                     ? `Your price from real listings, checked ${checkedAgo(value.ageDays ?? 0)}${value.stale ? '. Check again?' : ''}`
                     : `${lostShare != null ? `Down ${Math.round(lostShare * 100)}% since you bought it · ` : ''}estimate, likely ${formatMoney(
@@ -136,11 +156,11 @@ export default function ItemDetailScreen() {
                       )}–${formatMoney(value.valuation!.high, region)}`}
                 </AppText>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
+              <Ionicons name="chevron-forward" size={18} color={c.onInk} style={{ opacity: 0.6 }} />
             </View>
             {lostShare != null ? (
-              <View style={[styles.track, { backgroundColor: c.raised }]}>
-                <View style={[styles.trackFill, { width: `${Math.round((1 - lostShare) * 100)}%`, backgroundColor: c.accent }]} />
+              <View style={[styles.track, { backgroundColor: 'rgba(127,127,127,0.35)' }]}>
+                <View style={[styles.trackFill, { width: `${Math.round((1 - lostShare) * 100)}%`, backgroundColor: c.onInk }]} />
               </View>
             ) : null}
           </Pressable>
@@ -262,7 +282,9 @@ export default function ItemDetailScreen() {
         <Section>
           <Row label="Delete item" icon="trash-outline" destructive last onPress={confirmDelete} />
         </Section>
+        </View>
       </ScrollView>
+
 
       {/* Price bar, like "Buy now" */}
       <View
@@ -288,7 +310,7 @@ export default function ItemDetailScreen() {
 
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
         <Pressable style={styles.viewer} onPress={() => setViewer(null)} accessibilityLabel="Close photo">
-          {viewer ? <Image source={{ uri: viewer }} style={StyleSheet.absoluteFill} contentFit="contain" /> : null}
+          {viewer ? <Image source={photoSource(viewer)} style={StyleSheet.absoluteFill} contentFit="contain" /> : null}
           <View style={[styles.viewerClose, { top: insets.top + 12 }]}>
             <Ionicons name="close" size={22} color="#fff" />
           </View>
@@ -312,18 +334,30 @@ function InfoPill({ icon, label }: { icon: ComponentProps<typeof Ionicons>['name
 
 const styles = StyleSheet.create({
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  hero: {
-    marginHorizontal: Spacing.xl,
-    marginTop: Spacing.sm,
-    height: 300,
-    borderRadius: Radius.xxl,
-    borderCurve: 'continuous',
+  hero: { width: '100%', overflow: 'hidden', backgroundColor: '#111' },
+  addPhoto: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: OnPhoto.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: OnPhoto.glassBorder,
   },
-  headline: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, paddingBottom: Spacing.md, gap: 4 },
-  title: { fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
+  sheet: { marginTop: -32, borderTopLeftRadius: 32, borderTopRightRadius: 32, borderCurve: 'continuous', paddingTop: Spacing.sm },
+  topControls: {
+    position: 'absolute',
+    left: Spacing.lg,
+    right: Spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  headline: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.xl, paddingBottom: Spacing.lg, gap: 6 },
+  title: { fontSize: 34, fontWeight: '800', letterSpacing: -1.1, lineHeight: 38 },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingHorizontal: Spacing.xl, marginBottom: Spacing.xl },
   pill: {
     flexDirection: 'row',

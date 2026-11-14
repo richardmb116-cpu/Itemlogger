@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui';
-import { Radius, Spacing, useColors, type Palette } from '@/constants/theme';
-import { categoryInfo } from '@/lib/categories';
+import { OnPhoto, Radius, Spacing, useColors, type Palette } from '@/constants/theme';
 import { formatDate, formatMoney } from '@/lib/format';
+import { itemPhoto } from '@/lib/photos';
 import type { Item, TaxRegion } from '@/lib/types';
 import { currentValue } from '@/lib/valuation';
 import { warrantyStatus, type WarrantyState } from '@/lib/warranty';
@@ -30,40 +31,35 @@ export function WarrantyPill({ item }: { item: Item }) {
   return (
     <View style={[styles.pill, { backgroundColor: col.bg }]}>
       <Ionicons name={col.icon} size={12} color={col.fg} />
-      <AppText variant="caption" color={col.fg}>
+      <AppText variant="caption" color={col.fg} style={{ fontWeight: '600' }}>
         {status.label}
       </AppText>
     </View>
   );
 }
 
-/** Item photo on a soft grey tile, or the category icon when there's no photo. */
+/** The item's photo, or a photo for its category, cropped to a rounded square. */
 export function ItemThumb({
   item,
   size = 56,
   radius = Radius.md,
-  onTile,
 }: {
   item: Item;
   size?: number;
   radius?: number;
-  /** Set when the thumbnail sits on a grey tile, so it uses a contrasting background. */
+  /** Kept for older call sites; photos no longer need a contrasting tile. */
   onTile?: boolean;
 }) {
   const c = useColors();
-  const cat = categoryInfo(item.category);
+  const photo = itemPhoto(item);
   return (
-    <View style={[styles.thumb, { width: size, height: size, borderRadius: radius, borderCurve: 'continuous', backgroundColor: onTile ? c.raised : c.card }]}>
-      {item.photoUri ? (
-        <Image source={{ uri: item.photoUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
-      ) : (
-        <Ionicons name={cat.icon} size={size * 0.42} color={c.textSecondary} />
-      )}
+    <View style={[styles.thumb, { width: size, height: size, borderRadius: radius, backgroundColor: c.card }]}>
+      <Image source={photo.source} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
     </View>
   );
 }
 
-/** List row: grey image tile on the left, name, price and status on the right. */
+/** List row: photo on the left, name, price and status on the right. */
 export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegion; onPress: () => void }) {
   const c = useColors();
   const worth = item.sold ? null : (currentValue(item)?.amount ?? null);
@@ -73,20 +69,12 @@ export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegi
       accessibilityLabel={item.name}
       onPress={onPress}
       style={({ pressed }) => [styles.row, { opacity: pressed ? 0.6 : 1 }]}>
-      <ItemThumb item={item} size={84} radius={Radius.lg} />
+      <ItemThumb item={item} size={80} radius={Radius.lg} />
       <View style={styles.rowMiddle}>
         <AppText variant="headline" numberOfLines={1}>
           {item.name}
         </AppText>
-        <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'], fontWeight: '500' }}>
-          {item.sold ? `Sold for ${formatMoney(item.sold.price, region)}` : formatMoney(item.price, region)}
-          {worth != null ? (
-            <AppText variant="subhead" color={c.textSecondary}>
-              {`  ·  worth about ${formatMoney(worth, region)}`}
-            </AppText>
-          ) : null}
-        </AppText>
-        <AppText variant="footnote" color={c.textSecondary} numberOfLines={1}>
+        <AppText variant="subhead" color={c.textSecondary} numberOfLines={1}>
           {[item.store, formatDate(item.purchaseDate, region)].filter(Boolean).join(' · ')}
         </AppText>
         <View style={styles.rowBadges}>
@@ -94,19 +82,26 @@ export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegi
           {item.use === 'work' ? (
             <View style={[styles.pill, { backgroundColor: c.card }]}>
               <Ionicons name="briefcase" size={11} color={c.textSecondary} />
-              <AppText variant="caption" color={c.textSecondary}>
+              <AppText variant="caption" color={c.textSecondary} style={{ fontWeight: '600' }}>
                 Work
               </AppText>
             </View>
           ) : null}
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
+      <View style={styles.rowRight}>
+        <AppText variant="headline" style={{ fontVariant: ['tabular-nums'] }}>
+          {item.sold ? formatMoney(item.sold.price, region) : formatMoney(worth ?? item.price, region)}
+        </AppText>
+        <AppText variant="caption" color={c.textTertiary}>
+          {item.sold ? 'sold' : worth != null ? 'worth today' : 'paid'}
+        </AppText>
+      </View>
     </Pressable>
   );
 }
 
-/** Product-style card for horizontal shelves: big image tile, name, detail line, blue pill. */
+/** Tall photo card for horizontal shelves, with the text laid over a soft gradient. */
 export function ItemCard({
   item,
   detail,
@@ -118,24 +113,28 @@ export function ItemCard({
   action: string;
   onPress: () => void;
 }) {
-  const c = useColors();
+  const photo = itemPhoto(item);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={item.name}
+      accessibilityLabel={`${item.name}, ${detail}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, { opacity: pressed ? 0.7 : 1 }]}>
-      <ItemThumb item={item} size={156} radius={Radius.xl} />
-      <AppText variant="subhead" style={{ fontWeight: '600', marginTop: Spacing.sm }} numberOfLines={1}>
-        {item.name}
-      </AppText>
-      <AppText variant="footnote" color={c.textSecondary} numberOfLines={1}>
-        {detail}
-      </AppText>
-      <View style={[styles.cardPill, { backgroundColor: c.accent }]}>
-        <AppText variant="caption" color={c.onAccent} style={{ fontWeight: '600' }}>
-          {action}
+      style={({ pressed }) => [styles.card, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
+      <Image source={photo.source} style={StyleSheet.absoluteFill} contentFit="cover" transition={200} />
+      <LinearGradient colors={OnPhoto.scrim} locations={[0.35, 0.6, 1]} style={StyleSheet.absoluteFill} />
+      <View style={styles.cardText}>
+        <AppText variant="headline" color={OnPhoto.text} numberOfLines={2}>
+          {item.name}
         </AppText>
+        <AppText variant="footnote" color={OnPhoto.textSecondary} numberOfLines={1}>
+          {detail}
+        </AppText>
+        <View style={styles.cardPill}>
+          <AppText variant="caption" color={OnPhoto.text} style={{ fontWeight: '700' }}>
+            {action}
+          </AppText>
+          <Ionicons name="arrow-forward" size={12} color={OnPhoto.text} />
+        </View>
       </View>
     </Pressable>
   );
@@ -149,13 +148,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
-    borderCurve: 'continuous',
     alignSelf: 'flex-start',
   },
-  thumb: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, paddingVertical: Spacing.sm },
-  rowMiddle: { flex: 1, gap: 2 },
-  rowBadges: { flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' },
-  card: { width: 156, gap: 2 },
-  cardPill: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, borderCurve: 'continuous', marginTop: 6 },
+  thumb: { overflow: 'hidden', borderCurve: 'continuous' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, paddingVertical: Spacing.md },
+  rowMiddle: { flex: 1, gap: 3 },
+  rowRight: { alignItems: 'flex-end', gap: 2 },
+  rowBadges: { flexDirection: 'row', gap: 6, marginTop: 5, flexWrap: 'wrap' },
+  card: {
+    width: 200,
+    height: 260,
+    borderRadius: Radius.xl,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  cardText: { padding: Spacing.lg, gap: 3 },
+  cardPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: OnPhoto.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: OnPhoto.glassBorder,
+  },
 });

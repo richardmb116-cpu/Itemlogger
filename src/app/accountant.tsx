@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { HtmlPreview } from '@/components/html-preview';
@@ -22,10 +22,8 @@ export default function AccountantScreen() {
   const endYear = Number(params.year) || taxYearFor(todayISO(), region).endYear;
   const year = taxYearByEnd(endYear, region);
 
-  const rows = useMemo(
-    () => accountantRows(items, region, settings.depreciation, endYear),
-    [items, region, settings.depreciation, endYear],
-  );
+  // The React Compiler memoizes this; no manual useMemo needed.
+  const rows = accountantRows(items, region, settings.depreciation, endYear);
   const total = rows.reduce((s, r) => s + r.deduction, 0);
   const missingReceipts = rows.filter((r) => !r.hasReceipt).length;
   const fileBase = `Work purchases ${year.label.replace(/\s+/g, ' ')}`;
@@ -71,7 +69,7 @@ export default function AccountantScreen() {
           title: 'For your accountant',
           headerLeft: () => (
             <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10} style={{ paddingHorizontal: 6 }}>
-              <AppText color={c.accent}>Close</AppText>
+              <AppText color={c.ink} style={{ fontWeight: '600' }}>Close</AppText>
             </Pressable>
           ),
         }}
@@ -119,7 +117,7 @@ export default function AccountantScreen() {
         <View style={styles.actions}>
           {busy ? (
             <View style={styles.busy}>
-              <ActivityIndicator color={c.accent} />
+              <ActivityIndicator color={c.ink} />
               <AppText color={c.textSecondary}>{busy === 'pdf' ? 'Preparing receipts…' : 'Preparing spreadsheet…'}</AppText>
             </View>
           ) : (

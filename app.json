@@ -8,7 +8,7 @@
     "scheme": "itemlogger",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.itemlogger.app",
       "supportsTablet": false
     },
@@ -30,9 +30,9 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0E8A6A",
+          "backgroundColor": "#0B0B0C",
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "imageWidth": 140
         }
       ],
       [
@@ -48,10 +48,11 @@
       [
         "expo-notifications",
         {
-          "color": "#0071E3"
+          "color": "#0B0B0C"
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,

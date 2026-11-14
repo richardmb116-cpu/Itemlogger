@@ -80,6 +80,8 @@ export type DepreciationSettings = {
 };
 
 export type Settings = {
+  /** The welcome screens have been seen. */
+  onboarded: boolean;
   taxRegion: TaxRegion;
   depreciation: DepreciationSettings;
   insurance: InsuranceDetails;

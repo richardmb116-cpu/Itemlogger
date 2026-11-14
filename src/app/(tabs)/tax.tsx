@@ -79,7 +79,11 @@ export default function TaxScreen() {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <ScreenTitle title="Tax" subtitle={`${formatDate(year.start, region)} – ${formatDate(year.end, region)}`} />
+        <ScreenTitle
+          eyebrow={`${formatDate(year.start, region)} – ${formatDate(year.end, region)}`}
+          title="Tax"
+          subtitle="Work purchases and what they're worth back to you."
+        />
 
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
@@ -89,17 +93,17 @@ export default function TaxScreen() {
         </ScrollView>
 
         <View style={styles.cards}>
-          <View style={[styles.bigCard, { backgroundColor: c.accent }]}>
+          <View style={[styles.bigCard, { backgroundColor: c.ink }]}>
             <View style={styles.cardLabel}>
-              <Ionicons name="receipt" size={16} color={c.onAccent} />
-              <AppText variant="subhead" color={c.onAccent} style={{ fontWeight: '600' }}>
+              <Ionicons name="receipt" size={16} color={c.onInk} />
+              <AppText variant="subhead" color={c.onInk} style={{ fontWeight: '600' }}>
                 Estimated deductions{future ? ' (projected)' : ''}
               </AppText>
             </View>
-            <AppText variant="largeTitle" color={c.onAccent} style={{ fontVariant: ['tabular-nums'] }}>
+            <AppText variant="largeTitle" color={c.onInk} style={{ fontVariant: ['tabular-nums'] }}>
               {formatMoney(totalDeductions, region, { cents: false })}
             </AppText>
-            <AppText variant="footnote" color={c.onAccent} style={{ opacity: 0.85 }}>
+            <AppText variant="footnote" color={c.onInk} style={{ opacity: 0.85 }}>
               {claims.length} item{claims.length === 1 ? '' : 's'} in {year.label}
             </AppText>
           </View>
@@ -167,7 +171,7 @@ export default function TaxScreen() {
             onPress={() => router.push({ pathname: '/accountant', params: { year: String(endYear) } })}
           />
           <AppText variant="footnote" color={c.textSecondary} style={{ textAlign: 'center' }}>
-            A PDF with receipts, or a spreadsheet, of this year's work items.
+            A PDF with receipts, or a spreadsheet, of the work items for this year.
           </AppText>
         </View>
 

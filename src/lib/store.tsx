@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 
 import { addMonths, toISODate } from './dates';
 import { deleteImage } from './images';
+import { bundledUri } from './photos';
 import { DEFAULT_REMINDER_DAYS } from './reminder-plan';
 import { kv } from './storage';
 import type { Item, Settings, TaxRegion } from './types';
@@ -10,6 +11,7 @@ const ITEMS_KEY = 'items.v1';
 const SETTINGS_KEY = 'settings.v1';
 
 const DEFAULT_SETTINGS: Settings = {
+  onboarded: false,
   taxRegion: 'US',
   depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
   insurance: { insurer: '', policyNumber: '', sumInsured: null },
@@ -25,7 +27,7 @@ type Store = {
   saveItem: (item: Item) => void;
   deleteItem: (id: string) => void;
   updateSettings: (patch: Partial<Settings>) => void;
-  addSampleItems: () => void;
+  addSampleItems: (region?: TaxRegion) => void;
   deleteAllItems: () => void;
 };
 
@@ -102,7 +104,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           void kv.set(SETTINGS_KEY, JSON.stringify(next));
           return next;
         }),
-      addSampleItems: () => writeItems((prev) => [...sampleItems(settings.taxRegion), ...prev]),
+      addSampleItems: (region) => writeItems((prev) => [...sampleItems(region ?? settings.taxRegion), ...prev]),
       deleteAllItems: () =>
         writeItems((prev) => {
           prev.forEach((i) => {
@@ -136,7 +138,7 @@ function sampleItems(region: TaxRegion): Item[] {
   const stamp = new Date().toISOString();
   const base = {
     notes: '',
-    photoUri: null,
+    photoUri: null as string | null,
     receiptUri: null,
     checkedPrice: null,
     sold: null,
@@ -144,13 +146,13 @@ function sampleItems(region: TaxRegion): Item[] {
     createdAt: stamp,
     updatedAt: stamp,
   };
-  const rows: Omit<Item, 'id' | 'notes' | 'photoUri' | 'receiptUri' | 'checkedPrice' | 'sold' | 'effectiveLifeYears' | 'createdAt' | 'updatedAt'>[] = [
-    { name: 'MacBook Pro 14"', model: 'Apple MacBook Pro 14 M4', category: 'electronics', price: 3299, purchaseDate: ago(4), store: 'Apple Store', serial: 'C02XK1J2MD6R', warrantyMonths: 24, condition: 'like-new', workPercent: 80, use: 'work' },
+  const rows: (Omit<Item, 'id' | 'notes' | 'photoUri' | 'receiptUri' | 'checkedPrice' | 'sold' | 'effectiveLifeYears' | 'createdAt' | 'updatedAt'> & { photoUri?: string })[] = [
+    { name: 'MacBook Pro 14"', photoUri: bundledUri('laptop'), model: 'Apple MacBook Pro 14 M4', category: 'electronics', price: 3299, purchaseDate: ago(4), store: 'Apple Store', serial: 'C02XK1J2MD6R', warrantyMonths: 24, condition: 'like-new', workPercent: 80, use: 'work' },
     { name: 'Dyson V15 Detect', model: 'Dyson V15 Detect Absolute', category: 'appliances', price: 1249, purchaseDate: ago(23, 3), store: us ? 'Best Buy' : 'JB Hi-Fi', serial: 'SV22-AU-48120', warrantyMonths: 24, condition: 'good', workPercent: 100, use: 'personal' },
-    { name: 'Herman Miller Aeron', model: 'Herman Miller Aeron size B', category: 'furniture', price: 2150, purchaseDate: ago(14), store: us ? 'Design Within Reach' : 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', workPercent: 100, use: 'work' },
-    { name: 'Breville Barista Express', model: 'Breville BES870', category: 'kitchen', price: 899, purchaseDate: ago(30), store: us ? 'Williams Sonoma' : 'Myer', serial: 'BES870BSS', warrantyMonths: 24, condition: 'fair', workPercent: 100, use: 'personal' },
-    { name: 'Sony WH-1000XM6', model: 'Sony WH-1000XM6', category: 'electronics', price: 649.95, purchaseDate: ago(1), store: 'Amazon', serial: '5512093', warrantyMonths: 12, condition: 'like-new', workPercent: 50, use: 'work' },
-    { name: 'Makita drill kit', model: 'Makita DHP487', category: 'tools', price: 389, purchaseDate: ago(8), store: us ? 'The Home Depot' : 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', workPercent: 100, use: 'personal' },
+    { name: 'Herman Miller Aeron', photoUri: bundledUri('chair'), model: 'Herman Miller Aeron size B', category: 'furniture', price: 2150, purchaseDate: ago(14), store: us ? 'Design Within Reach' : 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', workPercent: 100, use: 'work' },
+    { name: 'Breville Barista Express', photoUri: bundledUri('coffee'), model: 'Breville BES870', category: 'kitchen', price: 899, purchaseDate: ago(30), store: us ? 'Williams Sonoma' : 'Myer', serial: 'BES870BSS', warrantyMonths: 24, condition: 'fair', workPercent: 100, use: 'personal' },
+    { name: 'Sony WH-1000XM6', photoUri: bundledUri('headphones'), model: 'Sony WH-1000XM6', category: 'electronics', price: 649.95, purchaseDate: ago(1), store: 'Amazon', serial: '5512093', warrantyMonths: 12, condition: 'like-new', workPercent: 50, use: 'work' },
+    { name: 'Makita drill kit', photoUri: bundledUri('drill'), model: 'Makita DHP487', category: 'tools', price: 389, purchaseDate: ago(8), store: us ? 'The Home Depot' : 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', workPercent: 100, use: 'personal' },
   ];
   return rows.map((r, i) => ({ ...base, ...r, id: `sample-${i}-${newId()}` }));
 }

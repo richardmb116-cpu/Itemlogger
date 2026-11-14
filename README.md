@@ -55,15 +55,30 @@ different there; the iPhone is the real target.
 
 ## Design
 
-The UI follows the Apple Store app look in [`docs/design/reference.webp`](docs/design/reference.webp):
-white pages, soft grey (`#F5F5F7`) tiles behind images, Apple blue (`#0071E3`) pill buttons, bold
-left-aligned section headings, horizontal shelves and outlined pill chips. Colours live in
-`src/constants/theme.ts`; shared pieces (chips, pills, headings, rows) are in `src/components/`.
+"Gallery white": a premium, photography-led look in the spirit of high-end automotive and sportswear apps.
+
+- **Welcome**: five full-screen photo stories (inventory, warranties, insurance, resale, tax time), then a
+  country choice and "Add my first item" or "Explore with examples". Shown once; replay it from Settings.
+- **Palette**: monochrome first. Pure white pages, warm-grey surfaces, ink-black pill buttons, one cobalt
+  accent for links and selection. Dark mode inverts it (black pages, white buttons).
+- **Type**: heavy, tightly tracked display sizes (`Type.display`, `Type.hero`), spaced capital eyebrows.
+- **Photography**: items without a photo use a category photo, so nothing looks empty. The home banner,
+  shelves, collections and item pages are photo-first, with text on soft gradients and frosted glass.
+- **Item page**: full-bleed photo, glass back/edit buttons, details on a rounded sheet, a dark value card.
+- Tokens live in `src/constants/theme.ts`; shared pieces in `src/components/`; photos in `assets/photos/`
+  (mapped in `src/lib/photos.ts`).
+
+### Photo credits
+
+Bundled photography is from [Unsplash](https://unsplash.com) under the
+[Unsplash License](https://unsplash.com/license) (free for commercial use, no attribution required).
+Photo IDs are listed in `scripts/photo-sources.txt`.
 
 ## Development
 
 ```bash
 npm run typecheck   # TypeScript
+npx expo lint       # ESLint (expo config)
 npm test            # tax, depreciation, accountant export, warranty, reminder, valuation, listing, claim-pack tests
 npx expo-doctor     # dependency and config checks
 ```

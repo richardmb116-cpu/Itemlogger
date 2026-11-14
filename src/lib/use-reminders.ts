@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { planReminders } from './reminder-plan';
+import { planReminders, type PlannedReminder } from './reminder-plan';
 import {
   cancelReminders,
   getPermission,
@@ -56,25 +56,28 @@ export function useReminderSync() {
   useEffect(() => refresh(), [settings.remindersEnabled, refresh]);
   const active = remindersSupported && settings.remindersEnabled && permission === 'granted';
 
-  // Only the fields that affect reminders, so edits to notes or photos don't reschedule.
-  const signature = JSON.stringify([
-    active,
-    settings.reminderDays,
-    items.map((i) => [i.id, i.name, i.purchaseDate, i.warrantyMonths]),
-  ]);
-  const latest = useRef({ items, days: settings.reminderDays });
-  latest.current = { items, days: settings.reminderDays };
+  // The plan, serialized: rescheduling only happens when a reminder actually changes,
+  // so edits to notes or photos don't touch notifications.
+  const planKey = active
+    ? JSON.stringify(
+        planReminders(items, settings.reminderDays).map((r) => ({ ...r, date: r.date.toISOString() })),
+      )
+    : '';
 
   useEffect(() => {
     if (!remindersSupported) return;
     const timer = setTimeout(() => {
-      const work = active
-        ? syncReminders(planReminders(latest.current.items, latest.current.days))
-        : cancelReminders();
+      const plan = planKey
+        ? (JSON.parse(planKey) as (Omit<PlannedReminder, 'date'> & { date: string })[]).map((r) => ({
+            ...r,
+            date: new Date(r.date),
+          }))
+        : null;
+      const work = plan ? syncReminders(plan) : cancelReminders();
       work.catch((e) => console.warn('Could not update warranty reminders', e));
     }, 400);
     return () => clearTimeout(timer);
-  }, [signature, active]);
+  }, [planKey]);
 
   const tappedItemId = useTappedReminderItemId();
   useEffect(() => {

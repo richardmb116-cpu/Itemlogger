@@ -54,13 +54,10 @@ export default function SellScreen() {
 
   const generated = useMemo(() => (item ? buildListing(item, askingPrice, region) : null), [item, askingPrice, region]);
   const [title, setTitle] = useState(generated?.title ?? '');
-  const [body, setBody] = useState(generated?.body ?? '');
-  const [bodyEdited, setBodyEdited] = useState(false);
+  // The listing follows the asking price until the user edits the text themselves.
+  const [editedBody, setEditedBody] = useState<string | null>(null);
+  const body = editedBody ?? generated?.body ?? '';
   const [bodyHeight, setBodyHeight] = useState(160);
-  // Keep the listing in step with the asking price until the user edits the text themselves.
-  useEffect(() => {
-    if (generated && !bodyEdited) setBody(generated.body);
-  }, [generated, bodyEdited]);
 
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
@@ -131,7 +128,7 @@ export default function SellScreen() {
           title: 'Sell',
           headerLeft: () => (
             <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10} style={{ paddingHorizontal: 6 }}>
-              <AppText color={c.accent}>Close</AppText>
+              <AppText color={c.ink} style={{ fontWeight: '600' }}>Close</AppText>
             </Pressable>
           ),
         }}
@@ -284,10 +281,7 @@ export default function SellScreen() {
           />
           <TextInput
             value={body}
-            onChangeText={(t) => {
-              setBody(t);
-              setBodyEdited(true);
-            }}
+            onChangeText={setEditedBody}
             multiline
             scrollEnabled={false}
             onContentSizeChange={(e) => {

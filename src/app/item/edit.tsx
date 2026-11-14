@@ -102,10 +102,10 @@ export default function EditItemScreen() {
         options={{
           title: existing ? 'Edit item' : 'New item',
           headerLeft: () => (
-            <HeaderText label="Cancel" onPress={() => router.back()} color={c.accent} />
+            <HeaderText label="Cancel" onPress={() => router.back()} color={c.textSecondary} />
           ),
           headerRight: () => (
-            <HeaderText label="Save" bold onPress={save} color={canSave ? c.accent : c.textTertiary} disabled={!canSave} />
+            <HeaderText label="Save" bold onPress={save} color={canSave ? c.ink : c.textTertiary} disabled={!canSave} />
           ),
         }}
       />
@@ -165,10 +165,10 @@ export default function EditItemScreen() {
                   }}
                   style={[
                     styles.categoryTile,
-                    { backgroundColor: selected ? c.accentSoft : c.fill, borderColor: selected ? c.accent : 'transparent' },
+                    { backgroundColor: selected ? c.raised : c.fill, borderColor: selected ? c.ink : 'transparent' },
                   ]}>
-                  <Ionicons name={cat.icon} size={22} color={selected ? c.accent : c.textSecondary} />
-                  <AppText variant="caption" color={selected ? c.accent : c.textSecondary} numberOfLines={1}>
+                  <Ionicons name={cat.icon} size={22} color={selected ? c.ink : c.textSecondary} />
+                  <AppText variant="caption" color={selected ? c.ink : c.textSecondary} numberOfLines={1} style={{ fontWeight: selected ? '700' : '500' }}>
                     {cat.label}
                   </AppText>
                 </Pressable>
@@ -343,7 +343,7 @@ function PhotoSlot({
       ) : (
         <>
           <View style={[styles.slotIcon, { backgroundColor: c.raised }]}>
-            <Ionicons name={icon} size={24} color={c.accent} />
+            <Ionicons name={icon} size={24} color={c.ink} />
           </View>
           <AppText variant="subhead" style={{ fontWeight: '600' }}>
             {label}

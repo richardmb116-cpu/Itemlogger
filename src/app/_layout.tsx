@@ -18,7 +18,7 @@ export default function RootLayout() {
   const base = dark ? DarkTheme : DefaultTheme;
   const theme = {
     ...base,
-    colors: { ...base.colors, primary: c.accent, background: c.background, card: c.card, text: c.text },
+    colors: { ...base.colors, primary: c.ink, background: c.background, card: c.card, text: c.text },
   };
 
   return (
@@ -28,12 +28,14 @@ export default function RootLayout() {
         <ReminderSync />
         <Stack
           screenOptions={{
-            headerTintColor: c.accent,
+            headerTintColor: c.ink,
+            headerTitleStyle: { fontWeight: '700' },
             headerStyle: { backgroundColor: c.background },
             headerShadowVisible: false,
             contentStyle: { backgroundColor: c.background },
           }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Items' }} />
+          <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
           <Stack.Screen
             name="item/[id]"
             options={{ title: '', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}

@@ -1,20 +1,31 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useState, type ComponentProps } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemCard, ItemRow } from '@/components/item-bits';
-import { AppText, Chip, IconButton, PillButton, PrimaryButton, SectionHeading, tap } from '@/components/ui';
-import { Radius, Spacing, useColors } from '@/constants/theme';
+import { AppText, Chip, IconButton, SectionHeading, tap } from '@/components/ui';
+import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
 import { CATEGORIES, categoryInfo } from '@/lib/categories';
 import { formatMoney } from '@/lib/format';
+import { CATEGORY_PHOTOS, HOME_HERO_PHOTO } from '@/lib/photos';
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { sortItems, useStore } from '@/lib/store';
+import { currencyFor } from '@/lib/tax';
 import type { Category, ItemUse } from '@/lib/types';
 import { useEnableReminders } from '@/lib/use-reminders';
 import { currentValue } from '@/lib/valuation';
 import { warrantyStatus } from '@/lib/warranty';
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
+
+function greeting(now = new Date()): string {
+  const h = now.getHours();
+  return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+}
 
 export default function ItemsScreen() {
   const c = useColors();
@@ -42,6 +53,7 @@ export default function ItemsScreen() {
   }).length;
   const paid = owned.reduce((sum, i) => sum + (i.price ?? 0), 0);
   const worth = owned.reduce((sum, i) => sum + (values.get(i.id) ?? 0), 0);
+  const workCount = owned.filter((i) => i.use === 'work').length;
   const usedCategories = CATEGORIES.filter((cat) => owned.some((i) => i.category === cat.id));
 
   const q = query.trim().toLowerCase();
@@ -53,7 +65,7 @@ export default function ItemsScreen() {
       return false;
     }
     if (!q) return true;
-    return [item.name, item.store, item.serial, categoryInfo(item.category).label, item.notes]
+    return [item.name, item.model, item.store, item.serial, categoryInfo(item.category).label, item.notes]
       .join(' ')
       .toLowerCase()
       .includes(q);
@@ -66,37 +78,46 @@ export default function ItemsScreen() {
   };
   const open = (id: string) => router.push(`/item/${id}`);
   const browsing = !q;
+  const today = new Date().toLocaleDateString(currencyFor(region).locale, { weekday: 'long', day: 'numeric', month: 'long' });
 
   if (items.length === 0) {
     return (
-      <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: c.background }]}>
-        <View style={styles.topBar}>
-          <AppText variant="largeTitle">My Items</AppText>
-        </View>
-        <View style={styles.empty}>
-          <View style={[styles.emptyIcon, { backgroundColor: c.card }]}>
-            <Ionicons name="shield-checkmark" size={48} color={c.accent} />
-          </View>
-          <AppText variant="title2" style={{ textAlign: 'center' }}>
-            Your home, on record
+      <View style={[styles.flex, { backgroundColor: '#000' }]}>
+        <Image source={HOME_HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" />
+        <LinearGradient colors={OnPhoto.scrim} locations={[0, 0.4, 0.95]} style={StyleSheet.absoluteFill} />
+        <SafeAreaView style={styles.emptyWrap}>
+          <AppText variant="eyebrow" color={OnPhoto.textSecondary}>
+            Your inventory
           </AppText>
-          <AppText color={c.textSecondary} style={{ textAlign: 'center', lineHeight: 23 }}>
-            Snap an item and its receipt. We&apos;ll keep track of warranties, serial numbers and tax years for you.
+          <AppText variant="display" color={OnPhoto.text}>
+            Start with one{'\n'}thing you love.
           </AppText>
-          <View style={{ alignSelf: 'stretch', marginTop: Spacing.md }}>
-            <PrimaryButton label="Add your first item" icon="camera" onPress={addItem} />
-          </View>
-        </View>
-      </SafeAreaView>
+          <AppText color={OnPhoto.textSecondary} style={{ fontSize: 18, lineHeight: 25 }}>
+            Snap the item and its receipt. Warranties, value and tax take care of themselves.
+          </AppText>
+          <Pressable accessibilityRole="button" onPress={addItem} style={styles.emptyButton}>
+            <Ionicons name="camera" size={19} color="#0B0B0C" />
+            <AppText variant="headline" color="#0B0B0C" style={{ fontWeight: '700' }}>
+              Add your first item
+            </AppText>
+          </Pressable>
+        </SafeAreaView>
+      </View>
     );
   }
 
   const header = (
     <View>
+      {/* Greeting */}
       <View style={styles.topBar}>
-        <AppText variant="largeTitle" style={{ flex: 1 }}>
-          My Items
-        </AppText>
+        <View style={{ flex: 1 }}>
+          <AppText variant="eyebrow" color={c.textSecondary}>
+            {today}
+          </AppText>
+          <AppText variant="largeTitle" style={{ marginTop: 4 }}>
+            {greeting()}
+          </AppText>
+        </View>
         <IconButton
           icon={searching ? 'close' : 'search'}
           label={searching ? 'Close search' : 'Search'}
@@ -114,7 +135,7 @@ export default function ItemsScreen() {
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Search name, store, serial"
+            placeholder="Search name, model, store, serial"
             placeholderTextColor={c.textSecondary}
             style={[styles.searchInput, { color: c.text }]}
             autoFocus
@@ -127,77 +148,81 @@ export default function ItemsScreen() {
 
       {browsing ? (
         <>
-          {/* Hero banner */}
-          <View style={[styles.hero, { backgroundColor: c.card }]}>
-            <AppText variant="footnote" color={c.textSecondary} style={{ fontWeight: '600' }}>
-              WORTH TODAY
-            </AppText>
-            <AppText style={styles.heroValue}>{formatMoney(worth, region, { cents: false })}</AppText>
-            <AppText variant="subhead" color={c.textSecondary}>
-              Resale value of {owned.length} item{owned.length === 1 ? '' : 's'} · paid{' '}
-              {formatMoney(paid, region, { cents: false })}
-            </AppText>
-            <View style={styles.heroStats}>
-              <HeroStat icon="shield-checkmark" color={c.green} value={covered} label="Covered" />
-              <HeroStat icon="time" color={c.orange} value={expiring.length} label="Expiring" />
-              <HeroStat icon="briefcase" color={c.accent} value={owned.filter((i) => i.use === 'work').length} label="Work" />
+          {/* Hero: what everything is worth, over a photo */}
+          <View style={styles.hero}>
+            <Image source={HOME_HERO_PHOTO} style={StyleSheet.absoluteFill} contentFit="cover" transition={300} />
+            <LinearGradient
+              colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.85)']}
+              locations={[0, 0.4, 1]}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.heroTop}>
+              <View style={styles.glassChip}>
+                <Ionicons name="home" size={12} color={OnPhoto.text} />
+                <AppText variant="eyebrow" color={OnPhoto.text} style={{ fontSize: 11 }}>
+                  Worth today
+                </AppText>
+              </View>
+            </View>
+            <View style={styles.heroBottom}>
+              <AppText variant="hero" color={OnPhoto.text} style={{ fontVariant: ['tabular-nums'] }}>
+                {formatMoney(worth, region, { cents: false })}
+              </AppText>
+              <AppText variant="subhead" color={OnPhoto.textSecondary}>
+                {owned.length} item{owned.length === 1 ? '' : 's'} · paid {formatMoney(paid, region, { cents: false })}
+              </AppText>
+              <View style={styles.heroStats}>
+                <HeroStat icon="shield-checkmark" value={covered} label="covered" />
+                <HeroStat icon="time" value={expiring.length} label="expiring" />
+                <HeroStat icon="briefcase" value={workCount} label="work" />
+              </View>
             </View>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => router.push('/claim')}
-            style={({ pressed }) => [styles.claimRow, { backgroundColor: c.card, opacity: pressed ? 0.7 : 1 }]}>
-            <View style={[styles.claimIcon, { backgroundColor: c.accent }]}>
-              <Ionicons name="document-text" size={18} color={c.onAccent} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText variant="headline">Insurance claim pack</AppText>
-              <AppText variant="footnote" color={c.textSecondary}>
-                A PDF of your items, receipts and serial numbers
-              </AppText>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
-          </Pressable>
+          {/* Quick actions */}
+          <View style={styles.actions}>
+            <QuickAction icon="camera" label="Add item" onPress={addItem} />
+            <QuickAction icon="document-text" label="Claim pack" onPress={() => router.push('/claim')} />
+            <QuickAction icon="receipt" label="Tax" onPress={() => router.push('/tax')} />
+          </View>
 
           {showReminderPrompt ? (
-            <View style={[styles.prompt, { backgroundColor: c.accentSoft }]}>
-              <View style={[styles.promptIcon, { backgroundColor: c.accent }]}>
-                <Ionicons name="notifications" size={20} color={c.onAccent} />
-              </View>
-              <View style={{ flex: 1, gap: 2 }}>
-                <AppText variant="headline">Never miss a warranty</AppText>
-                <AppText variant="footnote" color={c.textSecondary}>
-                  Get a reminder 30 days and 1 week before one runs out.
+            <View style={[styles.prompt, { backgroundColor: c.ink }]}>
+              <View style={{ flex: 1, gap: 4 }}>
+                <AppText variant="eyebrow" color={c.onInk} style={{ opacity: 0.6 }}>
+                  Warranty reminders
+                </AppText>
+                <AppText variant="title3" color={c.onInk}>
+                  Never miss a claim.
+                </AppText>
+                <AppText variant="footnote" color={c.onInk} style={{ opacity: 0.7 }}>
+                  A nudge 30 days and 1 week before cover ends.
                 </AppText>
                 <View style={styles.promptActions}>
-                  <PillButton label="Turn on" onPress={turnOnReminders} />
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => {
+                      tap();
+                      void turnOnReminders();
+                    }}
+                    style={[styles.promptButton, { backgroundColor: c.onInk }]}>
+                    <AppText variant="subhead" color={c.ink} style={{ fontWeight: '700' }}>
+                      Turn on
+                    </AppText>
+                  </Pressable>
                   <AppText
-                    variant="footnote"
-                    color={c.textSecondary}
+                    variant="subhead"
+                    color={c.onInk}
+                    style={{ opacity: 0.7, fontWeight: '600' }}
                     onPress={() => updateSettings({ remindersPromptDismissed: true })}
                     suppressHighlighting>
                     Not now
                   </AppText>
                 </View>
               </View>
+              <Ionicons name="notifications" size={44} color={c.onInk} style={{ opacity: 0.18 }} />
             </View>
           ) : null}
-
-          {/* Browse by category */}
-          <SectionHeading title="Browse by category" />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
-            <CategoryBubble icon="apps" label="All" selected={category === null} onPress={() => setCategory(null)} />
-            {usedCategories.map((cat) => (
-              <CategoryBubble
-                key={cat.id}
-                icon={cat.icon}
-                label={cat.label.split(' ')[0]}
-                selected={category === cat.id}
-                onPress={() => setCategory(category === cat.id ? null : cat.id)}
-              />
-            ))}
-          </ScrollView>
 
           {/* Expiring shelf */}
           {expiring.length > 0 && !category && !use ? (
@@ -216,10 +241,54 @@ export default function ItemsScreen() {
               </ScrollView>
             </>
           ) : null}
+
+          {/* Categories as photo tiles */}
+          <SectionHeading
+            title="Collections"
+            action={category ? 'Show all' : undefined}
+            onAction={category ? () => setCategory(null) : undefined}
+          />
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
+            {usedCategories.map((cat) => {
+              const count = owned.filter((i) => i.category === cat.id).length;
+              const selected = category === cat.id;
+              return (
+                <Pressable
+                  key={cat.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${cat.label}, ${count} items`}
+                  accessibilityState={{ selected }}
+                  onPress={() => {
+                    tap();
+                    setCategory(selected ? null : cat.id);
+                  }}
+                  style={({ pressed }) => [
+                    styles.tile,
+                    { borderColor: selected ? c.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] },
+                  ]}>
+                  <Image source={CATEGORY_PHOTOS[cat.id]} style={StyleSheet.absoluteFill} contentFit="cover" />
+                  <LinearGradient colors={OnPhoto.scrim} locations={[0.3, 0.6, 1]} style={StyleSheet.absoluteFill} />
+                  <View style={styles.tileText}>
+                    <AppText variant="headline" color={OnPhoto.text} numberOfLines={1}>
+                      {cat.label}
+                    </AppText>
+                    <AppText variant="caption" color={OnPhoto.textSecondary}>
+                      {count} item{count === 1 ? '' : 's'}
+                    </AppText>
+                  </View>
+                  {selected ? (
+                    <View style={styles.tileCheck}>
+                      <Ionicons name="checkmark" size={14} color="#0B0B0C" />
+                    </View>
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </>
       ) : null}
 
-      <SectionHeading title={q ? 'Results' : use === 'sold' ? 'Sold' : category ? categoryInfo(category).label : 'All items'} />
+      <SectionHeading title={q ? 'Results' : use === 'sold' ? 'Sold' : category ? categoryInfo(category).label : 'Everything'} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip label="All" selected={use === null} onPress={() => setUse(null)} />
         <Chip label="Personal" selected={use === 'personal'} onPress={() => setUse('personal')} />
@@ -243,7 +312,7 @@ export default function ItemsScreen() {
         ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: c.separator }]} />}
         ListEmptyComponent={
           <AppText color={c.textSecondary} style={{ textAlign: 'center', marginTop: Spacing.xxl }}>
-            No items match.
+            Nothing here yet.
           </AppText>
         }
         renderItem={({ item }) => (
@@ -256,61 +325,34 @@ export default function ItemsScreen() {
   );
 }
 
-function HeroStat({
-  icon,
-  color,
-  value,
-  label,
-}: {
-  icon: 'shield-checkmark' | 'time' | 'briefcase';
-  color: string;
-  value: number;
-  label: string;
-}) {
-  const c = useColors();
+function HeroStat({ icon, value, label }: { icon: IconName; value: number; label: string }) {
   return (
-    <View style={[styles.heroStat, { backgroundColor: c.raised }]}>
-      <Ionicons name={icon} size={18} color={color} />
-      <AppText variant="title3" style={{ fontVariant: ['tabular-nums'] }}>
+    <View style={styles.heroStat}>
+      <Ionicons name={icon} size={13} color={OnPhoto.text} />
+      <AppText variant="subhead" color={OnPhoto.text} style={{ fontWeight: '700', fontVariant: ['tabular-nums'] }}>
         {value}
       </AppText>
-      <AppText variant="caption" color={c.textSecondary} numberOfLines={1}>
+      <AppText variant="caption" color={OnPhoto.textSecondary} style={{ fontSize: 13 }}>
         {label}
       </AppText>
     </View>
   );
 }
 
-function CategoryBubble({
-  icon,
-  label,
-  selected,
-  onPress,
-}: {
-  icon: ComponentProps<typeof Ionicons>['name'];
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
+function QuickAction({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
   const c = useColors();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${label} category`}
-      accessibilityState={{ selected }}
       onPress={() => {
         tap();
         onPress();
       }}
-      style={styles.bubbleWrap}>
-      <View
-        style={[
-          styles.bubble,
-          { backgroundColor: selected ? c.accentSoft : c.card, borderColor: selected ? c.accent : 'transparent' },
-        ]}>
-        <Ionicons name={icon} size={26} color={selected ? c.accent : c.text} />
+      style={({ pressed }) => [styles.action, { backgroundColor: c.card, transform: [{ scale: pressed ? 0.96 : 1 }] }]}>
+      <View style={[styles.actionIcon, { backgroundColor: c.ink }]}>
+        <Ionicons name={icon} size={18} color={c.onInk} />
       </View>
-      <AppText variant="caption" color={selected ? c.accent : c.text} numberOfLines={1}>
+      <AppText variant="subhead" style={{ fontWeight: '600' }}>
         {label}
       </AppText>
     </Pressable>
@@ -321,58 +363,113 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   topBar: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xl,
   },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
     marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.lg,
-    paddingHorizontal: 12,
-    height: 40,
+    marginBottom: Spacing.xl,
+    paddingHorizontal: 14,
+    height: 46,
     borderRadius: 999,
-    borderCurve: 'continuous',
   },
-  searchInput: { flex: 1, fontSize: 17, height: 40 },
-  hero: { marginHorizontal: Spacing.xl, marginBottom: Spacing.xxl, borderRadius: Radius.xxl, borderCurve: 'continuous', padding: Spacing.xl, gap: 2 },
-  heroValue: { fontSize: 40, fontWeight: '700', letterSpacing: -1, fontVariant: ['tabular-nums'], marginTop: 2 },
-  heroStats: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg },
-  heroStat: { flex: 1, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.md, gap: 2 },
-  claimRow: {
+  searchInput: { flex: 1, fontSize: 17, height: 46 },
+  hero: {
+    marginHorizontal: Spacing.lg,
+    height: 360,
+    borderRadius: Radius.xxl,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    justifyContent: 'space-between',
+    backgroundColor: '#222',
+  },
+  heroTop: { padding: Spacing.lg, flexDirection: 'row' },
+  heroBottom: { padding: Spacing.xl, gap: 2 },
+  heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: Spacing.lg },
+  heroStat: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: OnPhoto.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: OnPhoto.glassBorder,
+  },
+  glassChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: OnPhoto.glass,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: OnPhoto.glassBorder,
+  },
+  actions: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginTop: Spacing.md, marginBottom: Spacing.xxl },
+  action: {
+    flex: 1,
+    alignItems: 'flex-start',
     gap: Spacing.md,
-    marginHorizontal: Spacing.xl,
-    marginTop: -Spacing.lg,
-    marginBottom: Spacing.xxl,
     padding: Spacing.lg,
     borderRadius: Radius.xl,
     borderCurve: 'continuous',
   },
-  claimIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  actionIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   prompt: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: Spacing.md,
-    marginHorizontal: Spacing.xl,
-    marginTop: -Spacing.lg,
+    marginHorizontal: Spacing.lg,
+    marginTop: -Spacing.md,
     marginBottom: Spacing.xxl,
-    padding: Spacing.lg,
-    borderRadius: Radius.xl,
+    padding: Spacing.xl,
+    borderRadius: Radius.xxl,
     borderCurve: 'continuous',
   },
-  promptIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  promptActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, marginTop: Spacing.sm },
-  categories: { gap: Spacing.lg, paddingHorizontal: Spacing.xl, marginBottom: Spacing.xxl },
-  bubbleWrap: { alignItems: 'center', gap: 6, width: 68 },
-  bubble: { width: 64, height: 64, borderRadius: 32, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
-  shelf: { gap: Spacing.lg, paddingHorizontal: Spacing.xl, marginBottom: Spacing.xxl },
+  promptActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, marginTop: Spacing.md },
+  promptButton: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 999 },
+  shelf: { gap: Spacing.md, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xxl },
+  tile: {
+    width: 150,
+    height: 190,
+    borderRadius: Radius.xl,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+    borderWidth: 2,
+  },
+  tileText: { padding: Spacing.md, gap: 1 },
+  tileCheck: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chips: { gap: Spacing.sm, paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
-  separator: { height: StyleSheet.hairlineWidth, marginLeft: Spacing.xl + 84 + Spacing.lg },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing.xxl, gap: Spacing.md, paddingBottom: 140 },
-  emptyIcon: { width: 104, height: 104, borderRadius: 52, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm },
+  separator: { height: StyleSheet.hairlineWidth, marginLeft: Spacing.xl + 80 + Spacing.lg },
+  emptyWrap: { flex: 1, justifyContent: 'flex-end', padding: Spacing.xl + 4, gap: Spacing.md, paddingBottom: 140 },
+  emptyButton: {
+    marginTop: Spacing.md,
+    height: 58,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
 });
