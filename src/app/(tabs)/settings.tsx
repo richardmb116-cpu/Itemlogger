@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { Alert, Platform, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { Chip, Row, ScreenTitle, Section, Segmented } from '@/components/ui';
+import { AppText, Chip, Row, ScreenTitle, Section, Segmented } from '@/components/ui';
 import { Spacing, useColors } from '@/constants/theme';
 import { planReminders, REMINDER_HOUR, REMINDER_OPTIONS, reminderSummary } from '@/lib/reminder-plan';
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
@@ -40,6 +40,9 @@ export default function SettingsScreen() {
         ? `Your items cost ${formatMoney(totalPaid, settings.taxRegion, { cents: false })}, within this cover.`
         : 'Shown on your claim pack. Add your contents sum insured to check you are covered.';
   const inputStyle = [styles.input, { color: c.text }];
+
+  const dep = settings.depreciation;
+  const setDep = (patch: Partial<typeof dep>) => updateSettings({ depreciation: { ...dep, ...patch } });
 
   const on = settings.remindersEnabled;
   const blocked = on && permission === 'denied';
@@ -145,8 +148,8 @@ export default function SettingsScreen() {
           title="Tax region"
           footer={
             settings.taxRegion === 'AU'
-              ? 'Australian financial year (1 July – 30 June), amounts in AUD.'
-              : 'US tax year (calendar year), amounts in USD.'
+              ? 'Australian financial year (1 July – 30 June), amounts in AUD. Diminishing value claims more in the early years; prime cost spreads it evenly. The low-value pool groups items under $1,000. Pick what your accountant uses.'
+              : 'US tax year (calendar year), amounts in USD. Section 179 deducts the business share in the first year; MACRS spreads it over 5 or 7 years. Pick what your accountant uses.'
           }>
           <View style={{ padding: Spacing.md }}>
             <Segmented
@@ -158,7 +161,41 @@ export default function SettingsScreen() {
               ]}
             />
           </View>
-          <Row label="Currency" value={currencyFor(settings.taxRegion).code} last />
+          <Row label="Currency" value={currencyFor(settings.taxRegion).code} />
+          <View style={{ padding: Spacing.md, gap: Spacing.sm }}>
+            <AppText variant="footnote" color={c.textSecondary}>
+              Depreciation method
+            </AppText>
+            {settings.taxRegion === 'AU' ? (
+              <Segmented
+                value={dep.auMethod}
+                onChange={(auMethod) => setDep({ auMethod })}
+                options={[
+                  { value: 'diminishing', label: 'Diminishing value' },
+                  { value: 'prime', label: 'Prime cost' },
+                ]}
+              />
+            ) : (
+              <Segmented
+                value={dep.usMethod}
+                onChange={(usMethod) => setDep({ usMethod })}
+                options={[
+                  { value: 'section179', label: 'Section 179' },
+                  { value: 'macrs', label: 'MACRS' },
+                ]}
+              />
+            )}
+          </View>
+          {settings.taxRegion === 'AU' ? (
+            <Row label="Low-value pool" last>
+              <Switch
+                value={dep.auLowValuePool}
+                onValueChange={(auLowValuePool) => setDep({ auLowValuePool })}
+                trackColor={{ true: c.green, false: c.fill }}
+                accessibilityLabel="Low-value pool"
+              />
+            </Row>
+          ) : null}
         </Section>
 
         <Section title="Data" footer="Everything is stored on this iPhone only. Backup and sync are coming.">

@@ -8,10 +8,11 @@ import { ItemThumb } from '@/components/item-bits';
 import { AppText, Chip, Row, ScreenTitle, Section, Segmented } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { todayISO } from '@/lib/dates';
+import { deductionFor, depreciationSchedule, type Schedule } from '@/lib/depreciation';
 import { formatDate, formatMoney } from '@/lib/format';
 import { sortItems, useStore } from '@/lib/store';
 import { taxYearByEnd, taxYearFor } from '@/lib/tax';
-import type { TaxRegion } from '@/lib/types';
+import type { Item, TaxRegion } from '@/lib/types';
 
 export default function TaxScreen() {
   const c = useColors();
@@ -19,26 +20,60 @@ export default function TaxScreen() {
   const region = settings.taxRegion;
   const currentYear = taxYearFor(todayISO(), region).endYear;
 
-  // Tax years that have purchases, plus the current one, newest first.
+  // Depreciation schedules for work items. A sold item stops depreciating in the year it's sold.
+  const schedules = useMemo(() => {
+    const map = new Map<string, Schedule>();
+    for (const item of items) {
+      if (item.use !== 'work') continue;
+      const s = depreciationSchedule(item, region, settings.depreciation);
+      if (item.sold) {
+        const soldYear = taxYearFor(item.sold.date, region).endYear;
+        s.years = s.years.filter((y) => y.endYear <= soldYear);
+      }
+      map.set(item.id, s);
+    }
+    return map;
+  }, [items, region, settings.depreciation]);
+
+  // Years with purchases or deductions, up to this one, newest first.
   const years = useMemo(() => {
     const set = new Set<number>([currentYear]);
     items.forEach((i) => set.add(taxYearFor(i.purchaseDate, region).endYear));
+    schedules.forEach((s) => s.years.forEach((y) => y.endYear <= currentYear && y.deduction > 0 && set.add(y.endYear)));
     return [...set].sort((a, b) => b - a);
-  }, [items, region, currentYear]);
+  }, [items, schedules, region, currentYear]);
 
   const [picked, setPicked] = useState<number | null>(null);
   const endYear = picked != null && years.includes(picked) ? picked : currentYear;
   const year = taxYearByEnd(endYear, region);
 
-  const inYear = sortItems(items).filter((i) => taxYearFor(i.purchaseDate, region).endYear === endYear);
-  const work = inYear.filter((i) => i.use === 'work');
-  const personal = inYear.filter((i) => i.use === 'personal');
-  const sum = (list: typeof items) => list.reduce((s, i) => s + (i.price ?? 0), 0);
+  const sorted = sortItems(items);
+  const claims = sorted
+    .map((item) => ({ item, schedule: schedules.get(item.id), amount: 0 }))
+    .filter((r): r is { item: Item; schedule: Schedule; amount: number } => !!r.schedule?.eligible)
+    .map((r) => ({ ...r, amount: deductionFor(r.schedule, endYear) }))
+    .filter((r) => r.amount > 0);
+  const totalDeductions = claims.reduce((s, r) => s + r.amount, 0);
+  const notClaimable = sorted.filter(
+    (i) => i.use === 'work' && taxYearFor(i.purchaseDate, region).endYear === endYear && !schedules.get(i.id)?.eligible,
+  );
+  const boughtForWork = sorted.filter((i) => i.use === 'work' && taxYearFor(i.purchaseDate, region).endYear === endYear);
+  const workSpend = boughtForWork.reduce((s, i) => s + (i.price ?? 0), 0);
+  const future = endYear > currentYear;
 
   const changeRegion = (r: TaxRegion) => {
     setPicked(null);
     updateSettings({ taxRegion: r });
   };
+
+  const methodNote =
+    region === 'AU'
+      ? `Australia: 1 July to 30 June. Items $300 or less are claimed straight away; others are spread over their effective life using ${
+          settings.depreciation.auMethod === 'prime' ? 'prime cost' : 'diminishing value'
+        }${settings.depreciation.auLowValuePool ? ', with items under $1,000 in a low-value pool' : ''}. Only the work share is claimed.`
+      : `United States: calendar year. Using ${
+          settings.depreciation.usMethod === 'section179' ? 'Section 179 (full deduction in the first year)' : 'MACRS'
+        }. For business or self-employed use; employees generally can't deduct work purchases.`;
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.background }}>
@@ -65,61 +100,76 @@ export default function TaxScreen() {
         <View style={styles.cards}>
           <View style={[styles.bigCard, { backgroundColor: c.accent }]}>
             <View style={styles.cardLabel}>
-              <Ionicons name="briefcase" size={16} color={c.onAccent} />
+              <Ionicons name="receipt" size={16} color={c.onAccent} />
               <AppText variant="subhead" color={c.onAccent} style={{ fontWeight: '600' }}>
-                Work purchases
+                Deductions{future ? ' (projected)' : ''}
               </AppText>
             </View>
             <AppText variant="largeTitle" color={c.onAccent} style={{ fontVariant: ['tabular-nums'] }}>
-              {formatMoney(sum(work), region, { cents: false })}
+              {formatMoney(totalDeductions, region, { cents: false })}
             </AppText>
             <AppText variant="footnote" color={c.onAccent} style={{ opacity: 0.85 }}>
-              {work.length} item{work.length === 1 ? '' : 's'} in {year.label}
+              {claims.length} item{claims.length === 1 ? '' : 's'} in {year.label}
             </AppText>
           </View>
           <View style={[styles.smallCard, { backgroundColor: c.card }]}>
             <AppText variant="footnote" color={c.textSecondary} style={{ fontWeight: '600' }}>
-              Personal
+              Bought for work
             </AppText>
             <AppText variant="title2" style={{ fontVariant: ['tabular-nums'] }}>
-              {formatMoney(sum(personal), region, { cents: false })}
+              {formatMoney(workSpend, region, { cents: false })}
             </AppText>
             <AppText variant="footnote" color={c.textSecondary}>
-              {personal.length} item{personal.length === 1 ? '' : 's'}
+              {boughtForWork.length} item{boughtForWork.length === 1 ? '' : 's'}
             </AppText>
           </View>
         </View>
 
-        <Section
-          title="Work items"
-          footer={
-            region === 'AU'
-              ? 'Australia: the financial year runs 1 July to 30 June. Work items over $300 are usually depreciated over time rather than claimed at once.'
-              : 'United States: the tax year is the calendar year, 1 January to 31 December.'
-          }>
-          {work.length === 0 ? (
-            <Row label="No work purchases this year" last />
+        <Section title={`Deductions in ${year.label}`} footer={methodNote}>
+          {claims.length === 0 ? (
+            <Row label="Nothing to claim this year" last />
           ) : (
-            work.map((item, idx) => (
+            claims.map(({ item, schedule, amount }, idx) => (
               <Row
                 key={item.id}
                 label=""
-                last={idx === work.length - 1}
+                last={idx === claims.length - 1}
                 onPress={() => router.push(`/item/${item.id}`)}
                 chevron>
-                <View style={styles.workRow}>
+                <View style={styles.claimRow}>
                   <ItemThumb item={item} size={40} onTile />
                   <View style={{ flex: 1 }}>
                     <AppText numberOfLines={1}>{item.name}</AppText>
-                    <AppText variant="footnote" color={c.textSecondary}>
-                      {formatDate(item.purchaseDate, region)}
+                    <AppText variant="footnote" color={c.textSecondary} numberOfLines={1}>
+                      {schedule.method} · {item.workPercent}% work
                     </AppText>
                   </View>
-                  <AppText style={{ fontVariant: ['tabular-nums'] }}>{formatMoney(item.price, region)}</AppText>
+                  <AppText style={{ fontVariant: ['tabular-nums'], fontWeight: '600' }}>
+                    {formatMoney(amount, region, { cents: true })}
+                  </AppText>
                 </View>
               </Row>
             ))
           )}
+        </Section>
+
+        {notClaimable.length > 0 ? (
+          <Section title="Work items not claimed">
+            {notClaimable.map((item, idx) => (
+              <Row
+                key={item.id}
+                label={item.name}
+                value={schedules.get(item.id)?.note?.split('.')[0] ?? ''}
+                last={idx === notClaimable.length - 1}
+                onPress={() => router.push(`/item/${item.id}`)}
+                chevron
+              />
+            ))}
+          </Section>
+        ) : null}
+
+        <Section>
+          <Row label="Depreciation method" icon="options-outline" chevron last onPress={() => router.push('/settings')} />
         </Section>
 
         <AppText variant="footnote" color={c.textTertiary} style={styles.disclaimer}>
@@ -136,6 +186,6 @@ const styles = StyleSheet.create({
   bigCard: { flex: 1.4, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.lg, gap: 4 },
   smallCard: { flex: 1, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.lg, gap: 4, justifyContent: 'flex-end' },
   cardLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  workRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  claimRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   disclaimer: { textAlign: 'center', paddingHorizontal: Spacing.xxl },
 });

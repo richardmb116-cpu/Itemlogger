@@ -13,7 +13,8 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
 import { useStore } from '@/lib/store';
-import { taxYearFor } from '@/lib/tax';
+import { depreciationSchedule } from '@/lib/depreciation';
+import { taxYearByEnd, taxYearFor } from '@/lib/tax';
 import { checkedAgo, currentValue } from '@/lib/valuation';
 import { warrantyLengthLabel, warrantyStatus } from '@/lib/warranty';
 
@@ -44,6 +45,9 @@ export default function ItemDetailScreen() {
   const value = item.sold ? null : currentValue(item);
   // Share of the purchase price it has lost, when the price paid is known.
   const lostShare = value && item.price ? Math.max(0, item.price - value.amount) / item.price : null;
+  const schedule = item.use === 'work' ? depreciationSchedule(item, region, settings.depreciation) : null;
+  const shownYears = schedule?.years.slice(0, 6) ?? [];
+  const laterTotal = (schedule?.years.slice(6) ?? []).reduce((sum, y) => sum + y.deduction, 0);
   const undoSold = () => saveItem({ ...item, sold: null, updatedAt: new Date().toISOString() });
 
   const confirmDelete = () => {
@@ -164,6 +168,34 @@ export default function ItemDetailScreen() {
             </View>
           ) : null}
         </View>
+
+        {schedule ? (
+          <Section
+            title="Tax deductions"
+            footer={[
+              schedule.eligible ? `${schedule.detail}. ${item.workPercent}% work use, so that share is claimed.` : null,
+              laterTotal > 0 ? `Then ${formatMoney(laterTotal, region, { cents: false })} more over later years.` : null,
+              schedule.note,
+            ]
+              .filter(Boolean)
+              .join(' ')}>
+            {schedule.eligible ? (
+              <>
+                <Row label="Method" value={schedule.method} />
+                {shownYears.map((y, i) => (
+                  <Row
+                    key={y.endYear}
+                    label={taxYearByEnd(y.endYear, region).label}
+                    value={formatMoney(y.deduction, region, { cents: true })}
+                    last={i === shownYears.length - 1}
+                  />
+                ))}
+              </>
+            ) : (
+              <Row label="Not claimable" value="" last />
+            )}
+          </Section>
+        ) : null}
 
         <Section title="Details">
           <Row label="Purchased" value={formatDate(item.purchaseDate, region, 'long')} />

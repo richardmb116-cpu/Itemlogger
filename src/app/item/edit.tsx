@@ -8,6 +8,7 @@ import { DateField } from '@/components/date-field';
 import { AppText, Chip, Row, Section, Segmented, tap } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { CATEGORIES } from '@/lib/categories';
+import { suggestedLife } from '@/lib/depreciation';
 import { todayISO } from '@/lib/dates';
 import { parsePrice } from '@/lib/format';
 import { deleteImage, persistImage, pickImage } from '@/lib/images';
@@ -40,12 +41,15 @@ export default function EditItemScreen() {
   const [serial, setSerial] = useState(existing?.serial ?? '');
   const [warrantyMonths, setWarrantyMonths] = useState<number | null>(existing ? existing.warrantyMonths : 12);
   const [use, setUse] = useState<ItemUse>(existing?.use ?? 'personal');
+  const [workPercent, setWorkPercent] = useState(String(existing?.workPercent ?? 100));
+  const [lifeYears, setLifeYears] = useState(existing?.effectiveLifeYears != null ? String(existing.effectiveLifeYears) : '');
   const [condition, setCondition] = useState<Condition>(existing?.condition ?? 'like-new');
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(existing?.photoUri ?? null);
   const [receiptUri, setReceiptUri] = useState<string | null>(existing?.receiptUri ?? null);
 
   const canSave = name.trim().length > 0;
+  const suggested = suggestedLife({ name, model, category });
   const region = settings.taxRegion;
   const isCustomWarranty = warrantyMonths != null && !WARRANTY_OPTIONS.some((o) => o.months === warrantyMonths);
 
@@ -69,6 +73,8 @@ export default function EditItemScreen() {
       serial: serial.trim(),
       warrantyMonths,
       use,
+      workPercent: clampPercent(workPercent),
+      effectiveLifeYears: parseLife(lifeYears),
       condition,
       checkedPrice: existing?.checkedPrice ?? null,
       sold: existing?.sold ?? null,
@@ -197,7 +203,13 @@ export default function EditItemScreen() {
 
         <Section
           title="Used for"
-          footer={`Counts toward ${taxYearFor(purchaseDate, region).label}. Work items appear in your tax summary.`}>
+          footer={
+            use === 'work'
+              ? `Counts toward ${taxYearFor(purchaseDate, region).label}. Only the work share is claimed.${
+                  region === 'AU' ? " Leave effective life blank to use the suggestion, or check the ATO's effective life table." : ''
+                }`
+              : `Counts toward ${taxYearFor(purchaseDate, region).label}. Work items appear in your tax summary.`
+          }>
           <View style={{ padding: Spacing.md }}>
             <Segmented
               value={use}
@@ -208,6 +220,38 @@ export default function EditItemScreen() {
               ]}
             />
           </View>
+          {use === 'work' ? (
+            <>
+              <Row label="Work use">
+                <View style={styles.percentRow}>
+                  <TextInput
+                    value={workPercent}
+                    onChangeText={setWorkPercent}
+                    keyboardType="number-pad"
+                    maxLength={3}
+                    style={[styles.percentInput, { color: c.text, backgroundColor: c.raised }]}
+                    accessibilityLabel="Work use percent"
+                  />
+                  <AppText color={c.textSecondary}>%</AppText>
+                </View>
+              </Row>
+              <View style={styles.percentChips}>
+                {[100, 80, 50, 20].map((p) => (
+                  <Chip key={p} label={`${p}%`} selected={clampPercent(workPercent) === p} onPress={() => setWorkPercent(String(p))} />
+                ))}
+              </View>
+              {region === 'AU' ? (
+                <Field
+                  label="Effective life"
+                  value={lifeYears}
+                  onChangeText={setLifeYears}
+                  placeholder={`${suggested.years} yrs (${suggested.basis.toLowerCase()})`}
+                  keyboardType="decimal-pad"
+                  last
+                />
+              ) : null}
+            </>
+          ) : null}
         </Section>
 
         <Section title="Notes">
@@ -311,7 +355,20 @@ function PhotoSlot({
   );
 }
 
+function clampPercent(text: string): number {
+  const n = Number.parseInt(text, 10);
+  return Number.isFinite(n) ? Math.min(100, Math.max(1, n)) : 100;
+}
+
+function parseLife(text: string): number | null {
+  const n = Number.parseFloat(text);
+  return Number.isFinite(n) && n > 0 ? Math.min(50, n) : null;
+}
+
 const styles = StyleSheet.create({
+  percentRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  percentChips: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  percentInput: { width: 52, height: 32, borderRadius: 8, textAlign: 'center', fontSize: 16 },
   photoRow: { flexDirection: 'row', gap: Spacing.md, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xl },
   slot: {
     flex: 1,

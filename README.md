@@ -9,8 +9,15 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 - **Warranty tracking**: each item shows time left, with an "Expiring soon" shelf on the home screen.
 - **Warranty reminders**: notifications at 9 am, 30 days and 1 week before a warranty ends (or on the day,
   your choice in Settings). Tapping one opens the item, showing its receipt and serial number.
-- **Tax**: switch between the Australian financial year (1 Jul – 30 Jun) and the US calendar year, and
-  see work and personal purchase totals for each year.
+- **Tax**: switch between the Australian financial year (1 Jul – 30 Jun) and the US calendar year. Each
+  year shows the depreciation deductions for work items, including ones bought in earlier years
+  (`src/lib/depreciation.ts`):
+  - Australia: $300 or less claimed straight away; otherwise diminishing value or prime cost over the
+    effective life (suggested from the item, editable), first year pro-rated by days held; optional
+    low-value pool for items under $1,000
+  - United States: Section 179 (full business share in year one, needs over 50% business use) or MACRS
+    (5-year for electronics, 7-year for furniture and tools, half-year convention)
+  - only the work-use % is claimed; clothing and jewellery are excluded; a record-keeping aid, not tax advice
 - **Resale value**: an estimate of what each item would sell for second-hand today, from its category's
   resale curve, age, condition and remaining warranty (`src/lib/valuation.ts`). Shown as a likely range,
   with what it has lost since purchase and what it would likely fetch in a year.
@@ -55,7 +62,7 @@ left-aligned section headings, horizontal shelves and outlined pill chips. Colou
 
 ```bash
 npm run typecheck   # TypeScript
-npm test            # tax-year, warranty, reminder, valuation, listing, claim-pack and price-parsing tests
+npm test            # tax-year, depreciation, warranty, reminder, valuation, listing, claim-pack and price tests
 npx expo-doctor     # dependency and config checks
 ```
 
@@ -82,7 +89,8 @@ Built one at a time:
 3. ~~Insurance claim pack~~ (rooms/locations to filter by room are in item 8)
 4. ~~Resale listing generator~~, ~~manual price checks~~; automatic eBay price lookups via a small cached
    server (stage 2) and opt-in shared sale prices (stage 3)
-5. Depreciation schedules (ATO effective life, US Section 179 and MACRS) and work-use percentage
+5. ~~Depreciation schedules (ATO effective life, US Section 179 and MACRS) and work-use percentage~~;
+   accountant export (CSV) is a natural next step
 6. Receipt OCR, barcode and serial scanning, and email receipt import
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
 8. Rooms and locations, move mode, lending tracker, maintenance reminders

@@ -44,6 +44,10 @@ export type Item = {
   /** Manufacturer warranty length in months; null when there is none. */
   warrantyMonths: number | null;
   use: ItemUse;
+  /** Share of use that's for work, 1–100. Only applies when use is "work". */
+  workPercent: number;
+  /** Effective life in years for depreciation; null uses the suggested life. */
+  effectiveLifeYears: number | null;
   condition: Condition;
   /** Overrides the estimate when set. */
   checkedPrice: CheckedPrice | null;
@@ -63,8 +67,19 @@ export type InsuranceDetails = {
   sumInsured: number | null;
 };
 
+export type AuMethod = 'diminishing' | 'prime';
+export type UsMethod = 'section179' | 'macrs';
+
+export type DepreciationSettings = {
+  auMethod: AuMethod;
+  /** Pool items under $1,000 (ATO low-value pool). */
+  auLowValuePool: boolean;
+  usMethod: UsMethod;
+};
+
 export type Settings = {
   taxRegion: TaxRegion;
+  depreciation: DepreciationSettings;
   insurance: InsuranceDetails;
   /** Warranty expiry notifications switched on by the user. */
   remindersEnabled: boolean;
