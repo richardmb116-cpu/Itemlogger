@@ -48,7 +48,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "tsx --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:preview": "node scripts/build-preview.mjs"
   },
   "private": true
 }

@@ -27,7 +27,8 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 No Mac or Xcode is needed for development. To ship to the App Store later, use EAS Build
 (`npx eas-cli@latest build -p ios`).
 
-Use `npm run web` for a quick browser preview. Camera, the native date picker and the tab bar look
+Use `npm run web` for a quick browser preview, or `npm run build:preview` to build a self-contained web
+preview in `dist-preview/` that can be hosted under any path (for example as a private Claude artifact). Camera, the native date picker and the tab bar look
 different there; the iPhone is the real target.
 
 ## Design

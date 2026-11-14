@@ -45,10 +45,8 @@ export default function ItemDetailScreen() {
       deleteItem(item.id);
       router.back();
     };
-    if (Platform.OS === 'web') {
-      if (globalThis.confirm?.(`Delete ${item.name}?`)) doDelete();
-      return;
-    }
+    // The web preview can't show native dialogs, so it deletes straight away.
+    if (Platform.OS === 'web') return doDelete();
     Alert.alert(`Delete ${item.name}?`, 'Its photos and receipt will be removed from this phone.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: doDelete },

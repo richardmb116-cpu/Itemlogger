@@ -12,10 +12,8 @@ import { currencyFor } from '@/lib/tax';
 import { useEnableReminders, useReminderPermission } from '@/lib/use-reminders';
 
 function confirm(title: string, message: string, action: string, onConfirm: () => void) {
-  if (Platform.OS === 'web') {
-    if (globalThis.confirm?.(`${title}\n\n${message}`)) onConfirm();
-    return;
-  }
+  // The web preview can't show native dialogs, so it goes ahead straight away.
+  if (Platform.OS === 'web') return onConfirm();
   Alert.alert(title, message, [
     { text: 'Cancel', style: 'cancel' },
     { text: action, style: 'destructive', onPress: onConfirm },
