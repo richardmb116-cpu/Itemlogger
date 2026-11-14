@@ -1,0 +1,20 @@
+/** Browser preview: show the pack on screen; saving a PDF needs the iPhone app. */
+import type { ClaimImages, ClaimOptions } from './claim-pack';
+import type { Item } from './types';
+
+export const canExportPdf = false;
+
+export async function prepareImages(items: Item[], options: ClaimOptions): Promise<ClaimImages> {
+  const images: ClaimImages = {};
+  for (const item of items) {
+    images[item.id] = {
+      photo: options.includePhotos ? (item.photoUri ?? undefined) : undefined,
+      receipt: options.includeReceipts ? (item.receiptUri ?? undefined) : undefined,
+    };
+  }
+  return images;
+}
+
+export async function exportPdf(): Promise<void> {
+  throw new Error('PDF export works in the iPhone app.');
+}

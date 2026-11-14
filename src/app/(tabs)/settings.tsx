@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
-import { Alert, Platform, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { router } from 'expo-router';
+import { Alert, Platform, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Chip, Row, ScreenTitle, Section, Segmented } from '@/components/ui';
@@ -8,6 +9,8 @@ import { planReminders, REMINDER_HOUR, REMINDER_OPTIONS, reminderSummary } from 
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { openSystemSettings, remindersSupported } from '@/lib/reminders';
 import { useStore } from '@/lib/store';
+import { coverageCheck } from '@/lib/claim-pack';
+import { formatMoney, parsePrice } from '@/lib/format';
 import { currencyFor } from '@/lib/tax';
 import { useEnableReminders, useReminderPermission } from '@/lib/use-reminders';
 
@@ -25,6 +28,18 @@ export default function SettingsScreen() {
   const { settings, updateSettings, items, addSampleItems, deleteAllItems } = useStore();
   const { permission } = useReminderPermission();
   const enableReminders = useEnableReminders();
+
+  const ins = settings.insurance;
+  const setInsurance = (patch: Partial<typeof ins>) => updateSettings({ insurance: { ...ins, ...patch } });
+  const totalPaid = items.filter((i) => !i.sold).reduce((sum, i) => sum + (i.price ?? 0), 0);
+  const coverage = coverageCheck(totalPaid, ins.sumInsured);
+  const coverageNote =
+    coverage.state === 'under'
+      ? `Your items cost ${formatMoney(coverage.gap, settings.taxRegion, { cents: false })} more than this. You may be underinsured.`
+      : coverage.state === 'ok'
+        ? `Your items cost ${formatMoney(totalPaid, settings.taxRegion, { cents: false })}, within this cover.`
+        : 'Shown on your claim pack. Add your contents sum insured to check you are covered.';
+  const inputStyle = [styles.input, { color: c.text }];
 
   const on = settings.remindersEnabled;
   const blocked = on && permission === 'denied';
@@ -89,6 +104,43 @@ export default function SettingsScreen() {
           ) : null}
         </Section>
 
+        <Section title="Insurance" footer={coverageNote}>
+          <Row label="Insurer">
+            <TextInput
+              value={ins.insurer}
+              onChangeText={(insurer) => setInsurance({ insurer })}
+              placeholder="e.g. NRMA"
+              placeholderTextColor={c.textTertiary}
+              style={inputStyle}
+              accessibilityLabel="Insurer"
+            />
+          </Row>
+          <Row label="Policy number">
+            <TextInput
+              value={ins.policyNumber}
+              onChangeText={(policyNumber) => setInsurance({ policyNumber })}
+              placeholder="Optional"
+              placeholderTextColor={c.textTertiary}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              style={inputStyle}
+              accessibilityLabel="Policy number"
+            />
+          </Row>
+          <Row label="Contents cover">
+            <TextInput
+              defaultValue={ins.sumInsured != null ? String(ins.sumInsured) : ''}
+              onChangeText={(t) => setInsurance({ sumInsured: parsePrice(t) })}
+              placeholder="Sum insured"
+              placeholderTextColor={c.textTertiary}
+              keyboardType="decimal-pad"
+              style={inputStyle}
+              accessibilityLabel="Contents sum insured"
+            />
+          </Row>
+          <Row label="Create claim pack" icon="document-text-outline" chevron last onPress={() => router.push('/claim')} />
+        </Section>
+
         <Section
           title="Tax region"
           footer={
@@ -132,5 +184,6 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  input: { flex: 1, fontSize: 17, paddingVertical: 0, textAlign: 'right', minWidth: 120 },
   leads: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
 });

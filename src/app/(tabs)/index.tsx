@@ -144,6 +144,22 @@ export default function ItemsScreen() {
             </View>
           </View>
 
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => router.push('/claim')}
+            style={({ pressed }) => [styles.claimRow, { backgroundColor: c.card, opacity: pressed ? 0.7 : 1 }]}>
+            <View style={[styles.claimIcon, { backgroundColor: c.accent }]}>
+              <Ionicons name="document-text" size={18} color={c.onAccent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="headline">Insurance claim pack</AppText>
+              <AppText variant="footnote" color={c.textSecondary}>
+                A PDF of your items, receipts and serial numbers
+              </AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
+          </Pressable>
+
           {showReminderPrompt ? (
             <View style={[styles.prompt, { backgroundColor: c.accentSoft }]}>
               <View style={[styles.promptIcon, { backgroundColor: c.accent }]}>
@@ -327,6 +343,18 @@ const styles = StyleSheet.create({
   heroValue: { fontSize: 40, fontWeight: '700', letterSpacing: -1, fontVariant: ['tabular-nums'], marginTop: 2 },
   heroStats: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg },
   heroStat: { flex: 1, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.md, gap: 2 },
+  claimRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginTop: -Spacing.lg,
+    marginBottom: Spacing.xxl,
+    padding: Spacing.lg,
+    borderRadius: Radius.xl,
+    borderCurve: 'continuous',
+  },
+  claimIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   prompt: {
     flexDirection: 'row',
     gap: Spacing.md,

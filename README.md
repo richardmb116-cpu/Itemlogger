@@ -19,6 +19,11 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
   flagged for a re-check after 90 days. No scraping, API keys or running costs.
 - **Sell**: suggested asking price, a ready-to-post listing (serial number left out on purpose) to share or
   copy, and "Mark as sold". Sold items drop out of totals and reminders and move to a Sold filter.
+- **Insurance claim pack**: a PDF (A4 in Australia, US Letter in the US) for a claim or a full contents
+  inventory: cover page with insurer, policy number, incident details and totals, an item index, then each
+  item with make and model, serial, purchase details, price paid, current value, warranty, photo and receipt.
+  Flags gaps first (missing receipts, photos, serials) and warns when items cost more than the contents
+  sum insured. Shared from the iPhone share sheet; previewed on screen in the browser.
 - **Search and filters** by name, store, serial, work, personal and sold.
 - Light and dark mode, with all data stored on the device.
 
@@ -50,7 +55,7 @@ left-aligned section headings, horizontal shelves and outlined pill chips. Colou
 
 ```bash
 npm run typecheck   # TypeScript
-npm test            # tax-year, warranty, reminder, valuation, listing and price-parsing tests
+npm test            # tax-year, warranty, reminder, valuation, listing, claim-pack and price-parsing tests
 npx expo-doctor     # dependency and config checks
 ```
 
@@ -74,7 +79,7 @@ Built one at a time:
 
 1. ~~Core inventory, warranties and tax years~~
 2. ~~Warranty expiry notifications~~
-3. Insurance claim pack (PDF export by room or whole home)
+3. ~~Insurance claim pack~~ (rooms/locations to filter by room are in item 8)
 4. ~~Resale listing generator~~, ~~manual price checks~~; automatic eBay price lookups via a small cached
    server (stage 2) and opt-in shared sale prices (stage 3)
 5. Depreciation schedules (ATO effective life, US Section 179 and MACRS) and work-use percentage

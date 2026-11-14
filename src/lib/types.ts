@@ -56,8 +56,16 @@ export type Item = {
   updatedAt: string;
 };
 
+export type InsuranceDetails = {
+  insurer: string;
+  policyNumber: string;
+  /** Contents sum insured, in the region's currency. */
+  sumInsured: number | null;
+};
+
 export type Settings = {
   taxRegion: TaxRegion;
+  insurance: InsuranceDetails;
   /** Warranty expiry notifications switched on by the user. */
   remindersEnabled: boolean;
   /** Days before expiry to remind; 0 = on the day. */

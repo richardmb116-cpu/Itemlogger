@@ -11,6 +11,7 @@ const SETTINGS_KEY = 'settings.v1';
 
 const DEFAULT_SETTINGS: Settings = {
   taxRegion: 'AU',
+  insurance: { insurer: '', policyNumber: '', sumInsured: null },
   remindersEnabled: false,
   reminderDays: DEFAULT_REMINDER_DAYS,
   remindersPromptDismissed: false,
