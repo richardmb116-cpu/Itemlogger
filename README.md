@@ -70,3 +70,4 @@ Built one at a time:
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
 8. Rooms and locations, move mode, lending tracker, maintenance reminders
 9. iCloud backup, shared household and a trusted contact
+10. Home and Lock Screen widgets (next warranty to expire, total home value). Needs a development build, as Expo Go can't run widgets

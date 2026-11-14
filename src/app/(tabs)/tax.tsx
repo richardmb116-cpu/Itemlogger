@@ -133,8 +133,8 @@ export default function TaxScreen() {
 const styles = StyleSheet.create({
   years: { gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
   cards: { flexDirection: 'row', gap: Spacing.md, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xl },
-  bigCard: { flex: 1.4, borderRadius: Radius.lg, padding: Spacing.lg, gap: 4 },
-  smallCard: { flex: 1, borderRadius: Radius.lg, padding: Spacing.lg, gap: 4, justifyContent: 'flex-end' },
+  bigCard: { flex: 1.4, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.lg, gap: 4 },
+  smallCard: { flex: 1, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.lg, gap: 4, justifyContent: 'flex-end' },
   cardLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   workRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   disclaimer: { textAlign: 'center', paddingHorizontal: Spacing.xxl },

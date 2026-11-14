@@ -52,7 +52,7 @@ export function ItemThumb({
   const c = useColors();
   const cat = categoryInfo(item.category);
   return (
-    <View style={[styles.thumb, { width: size, height: size, borderRadius: radius, backgroundColor: onTile ? c.raised : c.card }]}>
+    <View style={[styles.thumb, { width: size, height: size, borderRadius: radius, borderCurve: 'continuous', backgroundColor: onTile ? c.raised : c.card }]}>
       {item.photoUri ? (
         <Image source={{ uri: item.photoUri }} style={StyleSheet.absoluteFill} contentFit="cover" transition={150} />
       ) : (
@@ -142,6 +142,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 999,
+    borderCurve: 'continuous',
     alignSelf: 'flex-start',
   },
   thumb: { alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
@@ -149,5 +150,5 @@ const styles = StyleSheet.create({
   rowMiddle: { flex: 1, gap: 2 },
   rowBadges: { flexDirection: 'row', gap: 6, marginTop: 4, flexWrap: 'wrap' },
   card: { width: 156, gap: 2 },
-  cardPill: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, marginTop: 6 },
+  cardPill: { alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, borderCurve: 'continuous', marginTop: 6 },
 });
