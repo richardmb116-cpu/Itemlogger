@@ -32,6 +32,7 @@ export default function EditItemScreen() {
   const existing = id ? getItem(id) : undefined;
 
   const [name, setName] = useState(existing?.name ?? '');
+  const [model, setModel] = useState(existing?.model ?? '');
   const [category, setCategory] = useState<Category>(existing?.category ?? 'electronics');
   const [price, setPrice] = useState(existing?.price != null ? String(existing.price) : '');
   const [purchaseDate, setPurchaseDate] = useState(existing?.purchaseDate ?? todayISO());
@@ -60,6 +61,7 @@ export default function EditItemScreen() {
     const item: Item = {
       id: existing?.id ?? newId(),
       name: name.trim(),
+      model: model.trim(),
       category,
       price: parsePrice(price),
       purchaseDate,
@@ -68,6 +70,7 @@ export default function EditItemScreen() {
       warrantyMonths,
       use,
       condition,
+      checkedPrice: existing?.checkedPrice ?? null,
       sold: existing?.sold ?? null,
       notes: notes.trim(),
       photoUri: finalPhoto,
@@ -112,6 +115,13 @@ export default function EditItemScreen() {
 
         <Section>
           <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Samsung fridge" autoFocus={!existing} />
+          <Field
+            label="Model"
+            value={model}
+            onChangeText={setModel}
+            placeholder="Make and model, for price checks"
+            autoCorrect={false}
+          />
           <Field
             label="Price"
             value={price}

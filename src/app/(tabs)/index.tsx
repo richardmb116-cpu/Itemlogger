@@ -13,7 +13,7 @@ import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { sortItems, useStore } from '@/lib/store';
 import type { Category, ItemUse } from '@/lib/types';
 import { useEnableReminders } from '@/lib/use-reminders';
-import { valueItem } from '@/lib/valuation';
+import { currentValue } from '@/lib/valuation';
 import { warrantyStatus } from '@/lib/warranty';
 
 export default function ItemsScreen() {
@@ -31,7 +31,7 @@ export default function ItemsScreen() {
   const owned = useMemo(() => sorted.filter((i) => !i.sold), [sorted]);
   const soldCount = items.length - owned.length;
   const statuses = useMemo(() => new Map(owned.map((i) => [i.id, warrantyStatus(i)])), [owned]);
-  const values = useMemo(() => new Map(owned.map((i) => [i.id, valueItem(i)?.estimate ?? null])), [owned]);
+  const values = useMemo(() => new Map(owned.map((i) => [i.id, currentValue(i)?.amount ?? null])), [owned]);
 
   const expiring = owned
     .filter((i) => statuses.get(i.id)?.state === 'expiring')
@@ -134,7 +134,7 @@ export default function ItemsScreen() {
             </AppText>
             <AppText style={styles.heroValue}>{formatMoney(worth, region, { cents: false })}</AppText>
             <AppText variant="subhead" color={c.textSecondary}>
-              Estimated resale value of {owned.length} item{owned.length === 1 ? '' : 's'} · paid{' '}
+              Resale value of {owned.length} item{owned.length === 1 ? '' : 's'} · paid{' '}
               {formatMoney(paid, region, { cents: false })}
             </AppText>
             <View style={styles.heroStats}>

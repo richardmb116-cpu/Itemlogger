@@ -5,13 +5,39 @@ import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Share, StyleSheet, TextInput, View } from 'react-native';
 
 import { ItemThumb } from '@/components/item-bits';
+import { LinkRow } from '@/components/link-row';
 import { AppText, PrimaryButton, Row, Section } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { todayISO } from '@/lib/dates';
 import { formatMoney, parsePrice } from '@/lib/format';
 import { buildListing, listingText } from '@/lib/listing';
+import { marketLinks, searchQuery, type MarketLink } from '@/lib/market-links';
 import { useStore } from '@/lib/store';
-import { CURVES, conditionInfo, formatAge, suggestedAskingPrice, valueItem, WARRANTY_BONUS } from '@/lib/valuation';
+import {
+  checkedAgo,
+  conditionInfo,
+  currentValue,
+  CURVES,
+  formatAge,
+  roundPrice,
+  suggestedAskingPrice,
+  valueItem,
+  WARRANTY_BONUS,
+  type CurrentValue,
+} from '@/lib/valuation';
+
+const LINK_ICONS: Record<MarketLink['id'], 'pricetags-outline' | 'storefront-outline' | 'search-outline'> = {
+  ebay: 'pricetags-outline',
+  facebook: 'storefront-outline',
+  gumtree: 'search-outline',
+};
+
+/** Start a little above what similar ones sold for, or at the top of the estimated range. */
+function startingAsk(cv: CurrentValue | null): string {
+  if (!cv) return '';
+  if (cv.source === 'checked') return String(roundPrice(cv.amount * 1.1));
+  return cv.valuation ? String(suggestedAskingPrice(cv.valuation)) : '';
+}
 
 export default function SellScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -21,7 +47,9 @@ export default function SellScreen() {
   const region = settings.taxRegion;
 
   const valuation = useMemo(() => (item ? valueItem(item) : null), [item]);
-  const [asking, setAsking] = useState(valuation ? String(suggestedAskingPrice(valuation)) : '');
+  const current = useMemo(() => (item ? currentValue(item) : null), [item]);
+  const [asking, setAsking] = useState(() => startingAsk(current));
+  const [myPrice, setMyPrice] = useState(item?.checkedPrice ? String(item.checkedPrice.amount) : '');
   const askingPrice = parsePrice(asking);
 
   const generated = useMemo(() => (item ? buildListing(item, askingPrice, region) : null), [item, askingPrice, region]);
@@ -54,6 +82,23 @@ export default function SellScreen() {
 
   const text = listingText({ title, body });
   const curve = CURVES[item.category];
+  const links = marketLinks(item, region);
+  const myPriceValue = parsePrice(myPrice);
+
+  const saveMyPrice = () => {
+    if (myPriceValue == null) return;
+    const updated = { ...item, checkedPrice: { amount: myPriceValue, checkedAt: todayISO() }, updatedAt: new Date().toISOString() };
+    saveItem(updated);
+    setAsking(startingAsk(currentValue(updated)));
+    setNotice('Saved. Your price now replaces our estimate.');
+  };
+
+  const removeMyPrice = () => {
+    const updated = { ...item, checkedPrice: null, updatedAt: new Date().toISOString() };
+    saveItem(updated);
+    setMyPrice('');
+    setAsking(startingAsk(currentValue(updated)));
+  };
 
   const copy = async () => {
     try {
@@ -110,29 +155,44 @@ export default function SellScreen() {
           </View>
         </View>
 
-        {/* Estimate */}
-        {valuation ? (
+        {/* Current value: your checked price, or our estimate */}
+        {current ? (
           <View style={[styles.valueCard, { backgroundColor: c.card }]}>
             <AppText variant="footnote" color={c.textSecondary} style={{ fontWeight: '600' }}>
-              ESTIMATED RESALE VALUE
+              {current.source === 'checked' ? 'YOUR CHECKED PRICE' : 'ESTIMATED RESALE VALUE'}
             </AppText>
-            <AppText style={styles.bigValue}>{formatMoney(valuation.estimate, region)}</AppText>
-            <AppText variant="subhead" color={c.textSecondary}>
-              Likely {formatMoney(valuation.low, region)} – {formatMoney(valuation.high, region)}
-            </AppText>
+            <AppText style={styles.bigValue}>{formatMoney(current.amount, region)}</AppText>
+            {current.source === 'checked' ? (
+              <AppText variant="subhead" color={current.stale ? c.orange : c.textSecondary}>
+                From real listings, checked {checkedAgo(current.ageDays ?? 0)}
+                {current.stale ? '. Worth checking again.' : ''}
+              </AppText>
+            ) : valuation ? (
+              <AppText variant="subhead" color={c.textSecondary}>
+                Likely {formatMoney(valuation.low, region)} – {formatMoney(valuation.high, region)}
+              </AppText>
+            ) : null}
             <View style={styles.valueStats}>
-              <ValueStat
-                icon="trending-down"
-                color={c.red}
-                label="Lost since purchase"
-                value={`${formatMoney(valuation.lost, region)} (${Math.round(valuation.lostShare * 100)}%)`}
-              />
-              <ValueStat
-                icon="hourglass-outline"
-                color={c.orange}
-                label="If you wait a year"
-                value={`about ${formatMoney(valuation.inAYear, region)}`}
-              />
+              {item.price != null ? (
+                <ValueStat
+                  icon="trending-down"
+                  color={c.red}
+                  label="Lost since purchase"
+                  value={`${formatMoney(Math.max(0, item.price - current.amount), region)} (${Math.round(
+                    (Math.max(0, item.price - current.amount) / item.price) * 100,
+                  )}%)`}
+                />
+              ) : null}
+              {current.source === 'checked' && valuation ? (
+                <ValueStat icon="calculator-outline" color={c.accent} label="Our estimate" value={formatMoney(valuation.estimate, region)} />
+              ) : valuation ? (
+                <ValueStat
+                  icon="hourglass-outline"
+                  color={c.orange}
+                  label="If you wait a year"
+                  value={`about ${formatMoney(valuation.inAYear, region)}`}
+                />
+              ) : null}
             </View>
           </View>
         ) : (
@@ -147,8 +207,42 @@ export default function SellScreen() {
           </Section>
         )}
 
-        {valuation ? (
-          <Section title="How it's worked out" footer={`${curve.note}. An estimate from typical resale prices, not a live market price.`}>
+        {/* Free price checks: open real listings, then type in what you see */}
+        <Section
+          title="Check real prices"
+          footer={`Searching for "${searchQuery(item)}".${
+            item.model ? '' : ' Add the make and model in Edit for closer matches.'
+          } eBay's sold filter shows what it actually sold for.`}>
+          {links.map((l, i) => (
+            <LinkRow key={l.id} url={l.url} label={l.label} icon={LINK_ICONS[l.id]} last={i === links.length - 1} />
+          ))}
+        </Section>
+
+        <Section title="Your price" footer="What similar ones sold for. It replaces our estimate everywhere in the app.">
+          <Row label="Sells for about">
+            <TextInput
+              value={myPrice}
+              onChangeText={setMyPrice}
+              keyboardType="decimal-pad"
+              placeholder="0"
+              placeholderTextColor={c.textTertiary}
+              style={[styles.input, { color: c.text, textAlign: 'right' }]}
+              accessibilityLabel="Your checked price"
+            />
+          </Row>
+          <Row
+            label={item.checkedPrice ? 'Update my price' : 'Use my price'}
+            icon="checkmark-circle-outline"
+            last={!item.checkedPrice}
+            onPress={myPriceValue != null ? saveMyPrice : undefined}
+          />
+          {item.checkedPrice ? (
+            <Row label="Go back to the estimate" icon="refresh-outline" destructive last onPress={removeMyPrice} />
+          ) : null}
+        </Section>
+
+        {valuation && current?.source !== 'checked' ? (
+          <Section title="How the estimate is worked out" footer={`${curve.note}. Based on typical resale prices, not live listings.`}>
             <Row label="Age" value={formatAge(valuation.ageYears)} />
             <Row label="Condition" value={conditionInfo(item.condition).label} />
             <Row
@@ -159,7 +253,15 @@ export default function SellScreen() {
           </Section>
         ) : null}
 
-        <Section title="Asking price" footer={valuation ? 'Starts at the top of the likely range, to leave room to haggle.' : undefined}>
+        <Section
+          title="Asking price"
+          footer={
+            current?.source === 'checked'
+              ? 'Starts about 10% above your checked price, to leave room to haggle.'
+              : current
+                ? 'Starts at the top of the likely range, to leave room to haggle.'
+                : undefined
+          }>
           <Row label="Ask for" last>
             <TextInput
               value={asking}
@@ -240,7 +342,7 @@ function ValueStat({
   label,
   value,
 }: {
-  icon: 'trending-down' | 'hourglass-outline';
+  icon: 'trending-down' | 'hourglass-outline' | 'calculator-outline';
   color: string;
   label: string;
   value: string;

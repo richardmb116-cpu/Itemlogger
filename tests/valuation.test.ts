@@ -11,7 +11,7 @@ const today = new Date(2026, 10, 14);
 function item(over: Partial<Item>): Item {
   return {
     id: 'x', name: 'Test thing', category: 'electronics', price: 1000, purchaseDate: '2025-11-14', store: 'JB Hi-Fi',
-    serial: 'SN1', warrantyMonths: null, use: 'personal', condition: 'good', sold: null, notes: '',
+    model: '', serial: 'SN1', warrantyMonths: null, use: 'personal', condition: 'good', checkedPrice: null, sold: null, notes: '',
     photoUri: null, receiptUri: null, createdAt: '', updatedAt: '', ...over,
   };
 }
@@ -70,4 +70,34 @@ test('listing mentions warranty and receipt, never the serial number', () => {
   assert.match(l.body, /Original receipt included/);
   assert.match(l.body, /Asking \$650/);
   assert.doesNotMatch(l.body, /SN1/);
+});
+
+test('a checked price overrides the estimate and goes stale after 90 days', async () => {
+  const { currentValue } = await import('../src/lib/valuation');
+  const est = currentValue(item({}), today)!;
+  assert.equal(est.source, 'estimate');
+  const fresh = currentValue(item({ checkedPrice: { amount: 700, checkedAt: '2026-11-01' } }), today)!;
+  assert.equal(fresh.source, 'checked');
+  assert.equal(fresh.amount, 700);
+  assert.equal(fresh.ageDays, 13);
+  assert.equal(fresh.stale, false);
+  assert.ok(fresh.valuation); // estimate kept for comparison
+  const old = currentValue(item({ checkedPrice: { amount: 700, checkedAt: '2026-06-01' } }), today)!;
+  assert.equal(old.stale, true);
+  // A checked price works even when the purchase price is unknown.
+  assert.equal(currentValue(item({ price: null, checkedPrice: { amount: 50, checkedAt: '2026-11-14' } }), today)!.amount, 50);
+});
+
+test('market search links use the model, region site, and sold filter', async () => {
+  const { marketLinks, searchQuery } = await import('../src/lib/market-links');
+  const it = item({ name: 'Vacuum', model: 'Dyson V15  Detect' });
+  assert.equal(searchQuery(it), 'Dyson V15 Detect');
+  assert.equal(searchQuery(item({ name: 'Old kettle', model: '' })), 'Old kettle');
+  const au = marketLinks(it, 'AU');
+  assert.deepEqual(au.map((l) => l.id), ['ebay', 'facebook', 'gumtree']);
+  assert.equal(au[0].url, 'https://www.ebay.com.au/sch/i.html?_nkw=Dyson%20V15%20Detect&LH_Sold=1&LH_Complete=1');
+  assert.equal(au[2].url, 'https://www.gumtree.com.au/s-dyson-v15-detect/k0');
+  const us = marketLinks(it, 'US');
+  assert.deepEqual(us.map((l) => l.id), ['ebay', 'facebook']);
+  assert.match(us[0].url, /^https:\/\/www\.ebay\.com\/sch/);
 });

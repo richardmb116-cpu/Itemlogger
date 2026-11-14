@@ -44,7 +44,7 @@ export function newId(): string {
 
 /** Fill in fields added after an item was first saved. */
 function normalize(item: Partial<Item> & Pick<Item, 'id'>): Item {
-  return { condition: 'good', sold: null, ...item } as Item;
+  return { model: '', condition: 'good', checkedPrice: null, sold: null, ...item } as Item;
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -115,14 +115,14 @@ function sampleItems(): Item[] {
   const now = new Date();
   const ago = (months: number, day = 12) => toISODate(addMonths(new Date(now.getFullYear(), now.getMonth(), day), -months));
   const stamp = new Date().toISOString();
-  const base = { notes: '', photoUri: null, receiptUri: null, sold: null, createdAt: stamp, updatedAt: stamp };
-  const rows: Omit<Item, 'id' | 'notes' | 'photoUri' | 'receiptUri' | 'sold' | 'createdAt' | 'updatedAt'>[] = [
-    { name: 'MacBook Pro 14"', category: 'electronics', price: 3299, purchaseDate: ago(4), store: 'Apple Store', serial: 'C02XK1J2MD6R', warrantyMonths: 24, condition: 'like-new', use: 'work' },
-    { name: 'Dyson V15 Detect', category: 'appliances', price: 1249, purchaseDate: ago(23, 3), store: 'JB Hi-Fi', serial: 'SV22-AU-48120', warrantyMonths: 24, condition: 'good', use: 'personal' },
-    { name: 'Herman Miller Aeron', category: 'furniture', price: 2150, purchaseDate: ago(14), store: 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', use: 'work' },
-    { name: 'Breville Barista Express', category: 'kitchen', price: 899, purchaseDate: ago(30), store: 'Myer', serial: 'BES870BSS', warrantyMonths: 24, condition: 'fair', use: 'personal' },
-    { name: 'Sony WH-1000XM6', category: 'electronics', price: 649.95, purchaseDate: ago(1), store: 'Amazon', serial: '5512093', warrantyMonths: 12, condition: 'like-new', use: 'work' },
-    { name: 'Makita drill kit', category: 'tools', price: 389, purchaseDate: ago(8), store: 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', use: 'personal' },
+  const base = { notes: '', photoUri: null, receiptUri: null, checkedPrice: null, sold: null, createdAt: stamp, updatedAt: stamp };
+  const rows: Omit<Item, 'id' | 'notes' | 'photoUri' | 'receiptUri' | 'checkedPrice' | 'sold' | 'createdAt' | 'updatedAt'>[] = [
+    { name: 'MacBook Pro 14"', model: 'Apple MacBook Pro 14 M4', category: 'electronics', price: 3299, purchaseDate: ago(4), store: 'Apple Store', serial: 'C02XK1J2MD6R', warrantyMonths: 24, condition: 'like-new', use: 'work' },
+    { name: 'Dyson V15 Detect', model: 'Dyson V15 Detect Absolute', category: 'appliances', price: 1249, purchaseDate: ago(23, 3), store: 'JB Hi-Fi', serial: 'SV22-AU-48120', warrantyMonths: 24, condition: 'good', use: 'personal' },
+    { name: 'Herman Miller Aeron', model: 'Herman Miller Aeron size B', category: 'furniture', price: 2150, purchaseDate: ago(14), store: 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', use: 'work' },
+    { name: 'Breville Barista Express', model: 'Breville BES870', category: 'kitchen', price: 899, purchaseDate: ago(30), store: 'Myer', serial: 'BES870BSS', warrantyMonths: 24, condition: 'fair', use: 'personal' },
+    { name: 'Sony WH-1000XM6', model: 'Sony WH-1000XM6', category: 'electronics', price: 649.95, purchaseDate: ago(1), store: 'Amazon', serial: '5512093', warrantyMonths: 12, condition: 'like-new', use: 'work' },
+    { name: 'Makita drill kit', model: 'Makita DHP487', category: 'tools', price: 389, purchaseDate: ago(8), store: 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', use: 'personal' },
   ];
   return rows.map((r, i) => ({ ...base, ...r, id: `sample-${i}-${newId()}` }));
 }

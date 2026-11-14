@@ -14,6 +14,9 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 - **Resale value**: an estimate of what each item would sell for second-hand today, from its category's
   resale curve, age, condition and remaining warranty (`src/lib/valuation.ts`). Shown as a likely range,
   with what it has lost since purchase and what it would likely fetch in a year.
+- **Real price checks**: one tap opens eBay sold listings, Facebook Marketplace or Gumtree (AU) searches for
+  the item's make and model. Enter what you see as "your price" and it replaces the estimate everywhere,
+  flagged for a re-check after 90 days. No scraping, API keys or running costs.
 - **Sell**: suggested asking price, a ready-to-post listing (serial number left out on purpose) to share or
   copy, and "Mark as sold". Sold items drop out of totals and reminders and move to a Sold filter.
 - **Search and filters** by name, store, serial, work, personal and sold.
@@ -72,7 +75,8 @@ Built one at a time:
 1. ~~Core inventory, warranties and tax years~~
 2. ~~Warranty expiry notifications~~
 3. Insurance claim pack (PDF export by room or whole home)
-4. ~~Resale listing generator~~; live marketplace price lookups
+4. ~~Resale listing generator~~, ~~manual price checks~~; automatic eBay price lookups via a small cached
+   server (stage 2) and opt-in shared sale prices (stage 3)
 5. Depreciation schedules (ATO effective life, US Section 179 and MACRS) and work-use percentage
 6. Receipt OCR, barcode and serial scanning, and email receipt import
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints

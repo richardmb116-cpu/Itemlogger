@@ -103,3 +103,45 @@ export function formatAge(years: number): string {
   const m = months % 12;
   return m ? `${y} yr ${m} mo` : `${y} year${y === 1 ? '' : 's'}`;
 }
+
+/** A price you checked yourself counts as stale after this many days. */
+export const CHECKED_PRICE_STALE_DAYS = 90;
+
+export type CurrentValue = {
+  amount: number;
+  /** "checked": the user's own price from real listings; "estimate": our resale curve. */
+  source: 'checked' | 'estimate';
+  /** For checked prices: days since it was checked. */
+  ageDays: number | null;
+  stale: boolean;
+  /** The curve estimate, when there is one, for comparison. */
+  valuation: Valuation | null;
+};
+
+/** What the item is worth now: the user's checked price if they have one, otherwise our estimate. */
+export function currentValue(
+  item: Pick<Item, 'price' | 'purchaseDate' | 'category' | 'condition' | 'warrantyMonths' | 'checkedPrice'>,
+  today = new Date(),
+): CurrentValue | null {
+  const valuation = valueItem(item, today);
+  if (item.checkedPrice) {
+    const ageDays = daysBetween(parseISODate(item.checkedPrice.checkedAt), today);
+    return {
+      amount: item.checkedPrice.amount,
+      source: 'checked',
+      ageDays,
+      stale: ageDays > CHECKED_PRICE_STALE_DAYS,
+      valuation,
+    };
+  }
+  if (!valuation) return null;
+  return { amount: valuation.estimate, source: 'estimate', ageDays: null, stale: false, valuation };
+}
+
+export function checkedAgo(days: number): string {
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 31) return `${days} days ago`;
+  const months = Math.round(days / 30.44);
+  return months < 12 ? `${months} month${months === 1 ? '' : 's'} ago` : 'over a year ago';
+}

@@ -14,7 +14,7 @@ import { toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
 import { useStore } from '@/lib/store';
 import { taxYearFor } from '@/lib/tax';
-import { valueItem } from '@/lib/valuation';
+import { checkedAgo, currentValue } from '@/lib/valuation';
 import { warrantyLengthLabel, warrantyStatus } from '@/lib/warranty';
 
 export default function ItemDetailScreen() {
@@ -41,7 +41,9 @@ export default function ItemDetailScreen() {
   const nextReminder = settings.remindersEnabled ? planReminders([item], settings.reminderDays)[0] : undefined;
   const edit = () => router.push({ pathname: '/item/edit', params: { id: item.id } });
   const sell = () => router.push({ pathname: '/item/sell', params: { id: item.id } });
-  const valuation = item.sold ? null : valueItem(item);
+  const value = item.sold ? null : currentValue(item);
+  // Share of the purchase price it has lost, when the price paid is known.
+  const lostShare = value && item.price ? Math.max(0, item.price - value.amount) / item.price : null;
   const undoSold = () => saveItem({ ...item, sold: null, updatedAt: new Date().toISOString() });
 
   const confirmDelete = () => {
@@ -102,7 +104,7 @@ export default function ItemDetailScreen() {
         ) : null}
 
         {/* Resale value */}
-        {valuation ? (
+        {value ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="See resale estimate"
@@ -113,22 +115,23 @@ export default function ItemDetailScreen() {
                 <Ionicons name="pricetag" size={20} color={c.accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <AppText variant="headline">Worth about {formatMoney(valuation.estimate, region)}</AppText>
-                <AppText variant="footnote" color={c.textSecondary}>
-                  Down {Math.round(valuation.lostShare * 100)}% since you bought it · likely{' '}
-                  {formatMoney(valuation.low, region)}–{formatMoney(valuation.high, region)}
+                <AppText variant="headline">Worth about {formatMoney(value.amount, region)}</AppText>
+                <AppText variant="footnote" color={value.stale ? c.orange : c.textSecondary}>
+                  {value.source === 'checked'
+                    ? `Your price from real listings, checked ${checkedAgo(value.ageDays ?? 0)}${value.stale ? '. Check again?' : ''}`
+                    : `${lostShare != null ? `Down ${Math.round(lostShare * 100)}% since you bought it · ` : ''}estimate, likely ${formatMoney(
+                        value.valuation!.low,
+                        region,
+                      )}–${formatMoney(value.valuation!.high, region)}`}
                 </AppText>
               </View>
               <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
             </View>
-            <View style={[styles.track, { backgroundColor: c.raised }]}>
-              <View
-                style={[
-                  styles.trackFill,
-                  { width: `${Math.round((1 - valuation.lostShare) * 100)}%`, backgroundColor: c.accent },
-                ]}
-              />
-            </View>
+            {lostShare != null ? (
+              <View style={[styles.track, { backgroundColor: c.raised }]}>
+                <View style={[styles.trackFill, { width: `${Math.round((1 - lostShare) * 100)}%`, backgroundColor: c.accent }]} />
+              </View>
+            ) : null}
           </Pressable>
         ) : null}
 
@@ -164,6 +167,7 @@ export default function ItemDetailScreen() {
 
         <Section title="Details">
           <Row label="Purchased" value={formatDate(item.purchaseDate, region, 'long')} />
+          <Row label="Model" value={item.model || '—'} />
           <Row label="Store" value={item.store || '—'} />
           <Row label="Serial number" value={item.serial || '—'} />
           <Row label="Category" value={cat.label} last />
@@ -198,13 +202,13 @@ export default function ItemDetailScreen() {
         ]}>
         <View style={{ flex: 1 }}>
           <AppText variant="footnote" color={c.textSecondary}>
-            {item.sold ? 'Sold for' : valuation ? `Worth about · paid ${formatMoney(item.price, region)}` : 'Paid'}
+            {item.sold ? 'Sold for' : value ? `Worth about · paid ${formatMoney(item.price, region)}` : 'Paid'}
           </AppText>
           <AppText variant="title2" style={{ fontVariant: ['tabular-nums'] }}>
             {item.sold
               ? formatMoney(item.sold.price, region)
-              : valuation
-                ? formatMoney(valuation.estimate, region)
+              : value
+                ? formatMoney(value.amount, region)
                 : formatMoney(item.price, region, { cents: true })}
           </AppText>
         </View>

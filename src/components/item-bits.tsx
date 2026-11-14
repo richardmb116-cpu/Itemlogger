@@ -7,7 +7,7 @@ import { Radius, Spacing, useColors, type Palette } from '@/constants/theme';
 import { categoryInfo } from '@/lib/categories';
 import { formatDate, formatMoney } from '@/lib/format';
 import type { Item, TaxRegion } from '@/lib/types';
-import { valueItem } from '@/lib/valuation';
+import { currentValue } from '@/lib/valuation';
 import { warrantyStatus, type WarrantyState } from '@/lib/warranty';
 
 export function warrantyColors(state: WarrantyState, c: Palette) {
@@ -66,7 +66,7 @@ export function ItemThumb({
 /** List row: grey image tile on the left, name, price and status on the right. */
 export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegion; onPress: () => void }) {
   const c = useColors();
-  const worth = item.sold ? null : (valueItem(item)?.estimate ?? null);
+  const worth = item.sold ? null : (currentValue(item)?.amount ?? null);
   return (
     <Pressable
       accessibilityRole="button"
