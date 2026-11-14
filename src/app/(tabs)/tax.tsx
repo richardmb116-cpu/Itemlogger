@@ -5,18 +5,18 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemThumb } from '@/components/item-bits';
-import { AppText, Chip, PrimaryButton, Row, ScreenTitle, Section, Segmented } from '@/components/ui';
+import { AppText, Chip, PrimaryButton, Row, ScreenTitle, Section } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { todayISO } from '@/lib/dates';
 import { deductionFor, depreciationSchedule, type Schedule } from '@/lib/depreciation';
 import { formatDate, formatMoney } from '@/lib/format';
 import { sortItems, useStore } from '@/lib/store';
 import { taxYearByEnd, taxYearFor } from '@/lib/tax';
-import type { Item, TaxRegion } from '@/lib/types';
+import type { Item } from '@/lib/types';
 
 export default function TaxScreen() {
   const c = useColors();
-  const { items, settings, updateSettings } = useStore();
+  const { items, settings } = useStore();
   const region = settings.taxRegion;
   const currentYear = taxYearFor(todayISO(), region).endYear;
 
@@ -62,10 +62,6 @@ export default function TaxScreen() {
   const future = endYear > currentYear;
   const advanced = settings.depreciation.showAdvanced;
 
-  const changeRegion = (r: TaxRegion) => {
-    setPicked(null);
-    updateSettings({ taxRegion: r });
-  };
 
   const simpleNote =
     region === 'AU'
@@ -85,16 +81,6 @@ export default function TaxScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <ScreenTitle title="Tax" subtitle={`${formatDate(year.start, region)} – ${formatDate(year.end, region)}`} />
 
-        <View style={{ paddingHorizontal: Spacing.lg, marginBottom: Spacing.md }}>
-          <Segmented
-            value={region}
-            onChange={changeRegion}
-            options={[
-              { value: 'AU', label: '🇦🇺  Australia' },
-              { value: 'US', label: '🇺🇸  United States' },
-            ]}
-          />
-        </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.years}>
           {years.map((y) => (
