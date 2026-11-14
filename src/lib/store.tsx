@@ -4,7 +4,10 @@ import { addMonths, toISODate } from './dates';
 import { deleteImage } from './images';
 import { bundledUri } from './photos';
 import { DEFAULT_REMINDER_DAYS } from './reminder-plan';
+import { markChanged, markDeleted, markSettingsChanged } from './outbox';
 import { kv } from './storage';
+import { SYNCED_SETTING_KEYS, type SyncedSettings } from './sync-merge';
+import type { SyncHost } from './sync';
 import type { Item, Settings, TaxRegion } from './types';
 
 const ITEMS_KEY = 'items.v1';
@@ -31,7 +34,12 @@ type Store = {
   updateSettings: (patch: Partial<Settings>) => void;
   addSampleItems: (region?: TaxRegion) => void;
   deleteAllItems: () => void;
+  /** For the sync engine: read the latest data and apply server changes without re-queuing them. */
+  syncHost: SyncHost;
 };
+
+/** The latest committed data, readable outside React (the sync engine runs between renders). */
+const latest: { items: Item[]; settings: Settings | null } = { items: [], settings: null };
 
 const StoreContext = createContext<Store | null>(null);
 
@@ -62,21 +70,35 @@ function normalize(item: Partial<Item> & Pick<Item, 'id'>): Item {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<Item[]>(() => load<Item[]>(ITEMS_KEY, []).map(normalize));
+  const [items, setItems] = useState<Item[]>(() => {
+    latest.items = load<Item[]>(ITEMS_KEY, []).map(normalize);
+    return latest.items;
+  });
   const [settings, setSettings] = useState<Settings>(() => {
     const saved = load<Partial<Settings>>(SETTINGS_KEY, {});
-    return {
+    latest.settings = {
       ...DEFAULT_SETTINGS,
       ...saved,
       depreciation: { ...DEFAULT_SETTINGS.depreciation, ...saved.depreciation },
       insurance: { ...DEFAULT_SETTINGS.insurance, ...saved.insurance },
     };
+    return latest.settings;
   });
 
   const writeItems = useCallback((updater: (prev: Item[]) => Item[]) => {
     setItems((prev) => {
       const next = updater(prev);
+      latest.items = next;
       void kv.set(ITEMS_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const writeSettings = useCallback((patch: Partial<Settings>) => {
+    setSettings((prev) => {
+      const next = { ...prev, ...patch };
+      latest.settings = next;
+      void kv.set(SETTINGS_KEY, JSON.stringify(next));
       return next;
     });
   }, []);
@@ -86,12 +108,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       items,
       settings,
       getItem: (id) => items.find((i) => i.id === id),
-      saveItem: (item) =>
+      saveItem: (item) => {
+        const stamped = { ...item, updatedAt: new Date().toISOString() };
+        markChanged([stamped.id]);
         writeItems((prev) => {
-          const exists = prev.some((i) => i.id === item.id);
-          return exists ? prev.map((i) => (i.id === item.id ? item : i)) : [item, ...prev];
-        }),
-      deleteItem: (id) =>
+          const exists = prev.some((i) => i.id === stamped.id);
+          return exists ? prev.map((i) => (i.id === stamped.id ? stamped : i)) : [stamped, ...prev];
+        });
+      },
+      deleteItem: (id) => {
+        markDeleted([id], new Date().toISOString());
         writeItems((prev) => {
           const gone = prev.find((i) => i.id === id);
           if (gone) {
@@ -99,24 +125,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             deleteImage(gone.receiptUri);
           }
           return prev.filter((i) => i.id !== id);
-        }),
-      updateSettings: (patch) =>
-        setSettings((prev) => {
-          const next = { ...prev, ...patch };
-          void kv.set(SETTINGS_KEY, JSON.stringify(next));
-          return next;
-        }),
-      addSampleItems: (region) => writeItems((prev) => [...sampleItems(region ?? settings.taxRegion), ...prev]),
-      deleteAllItems: () =>
+        });
+      },
+      updateSettings: (patch) => {
+        if (SYNCED_SETTING_KEYS.some((k) => k in patch)) markSettingsChanged(new Date().toISOString());
+        writeSettings(patch);
+      },
+      addSampleItems: (region) => {
+        const samples = sampleItems(region ?? settings.taxRegion);
+        markChanged(samples.map((i) => i.id));
+        writeItems((prev) => [...samples, ...prev]);
+      },
+      deleteAllItems: () => {
+        markDeleted(
+          latest.items.map((i) => i.id),
+          new Date().toISOString(),
+        );
         writeItems((prev) => {
           prev.forEach((i) => {
             deleteImage(i.photoUri);
             deleteImage(i.receiptUri);
           });
           return [];
-        }),
+        });
+      },
+      syncHost: {
+        getItems: () => latest.items,
+        setItems: (next) => writeItems(() => next),
+        getSettings: () => latest.settings ?? DEFAULT_SETTINGS,
+        applySettings: (synced: SyncedSettings) => writeSettings(synced),
+      },
     }),
-    [items, settings, writeItems],
+    [items, settings, writeItems, writeSettings],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

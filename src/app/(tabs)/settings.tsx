@@ -13,6 +13,7 @@ import { coverageCheck } from '@/lib/claim-pack';
 import { formatMoney, parsePrice } from '@/lib/format';
 import { currencyFor } from '@/lib/tax';
 import { useEnableReminders, useReminderPermission } from '@/lib/use-reminders';
+import { useSync } from '@/lib/use-sync';
 
 function confirm(title: string, message: string, action: string, onConfirm: () => void) {
   // The web preview can't show native dialogs, so it goes ahead straight away.
@@ -27,6 +28,7 @@ export default function SettingsScreen() {
   const c = useColors();
   const { settings, updateSettings, items, addSampleItems, deleteAllItems } = useStore();
   const { permission } = useReminderPermission();
+  const syncState = useSync();
   const enableReminders = useEnableReminders();
 
   const ins = settings.insurance;
@@ -85,6 +87,8 @@ export default function SettingsScreen() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <ScreenTitle eyebrow="Vestle" title="Settings" />
+
+        <SyncSection state={syncState} />
 
         <Section
           title="Country"
@@ -303,3 +307,52 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 17, paddingVertical: 0, textAlign: 'right', minWidth: 120 },
   leads: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
 });
+
+function SyncSection({ state }: { state: ReturnType<typeof useSync> }) {
+  const { configured, status, email, lastSynced, error, sync, signOut } = state;
+  const when = lastSynced ? lastSynced.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null;
+  if (!configured || status === 'signed-out') {
+    return (
+      <Section
+        title="Sync"
+        footer={
+          configured
+            ? 'Sign in to keep your items, photos and receipts on all your devices, backed up.'
+            : 'This build has no sync server, so everything stays on this device. See the README to connect Supabase.'
+        }>
+        <Row
+          label={configured ? 'Sign in to sync' : 'Sync isn’t set up'}
+          icon={configured ? 'cloud-upload-outline' : 'cloud-offline-outline'}
+          onPress={configured ? () => router.push('/account') : undefined}
+          last
+        />
+      </Section>
+    );
+  }
+  return (
+    <Section
+      title="Sync"
+      footer={
+        status === 'error'
+          ? `Couldn’t sync: ${error}. Changes are kept on this device and will sync when it works again.`
+          : 'Changes sync automatically, and the most recent edit wins.'
+      }>
+      <Row label="Signed in" value={email ?? ''} icon="person-circle-outline" />
+      <Row
+        label={status === 'syncing' ? 'Syncing…' : 'Sync now'}
+        value={status === 'error' ? 'Not synced' : when ? `Synced ${when}` : undefined}
+        icon="sync-outline"
+        onPress={() => void sync()}
+      />
+      <Row
+        label="Sign out"
+        icon="log-out-outline"
+        destructive
+        last
+        onPress={() =>
+          confirm('Sign out?', 'Your items stay on this device. Sign in again any time to sync.', 'Sign out', () => void signOut())
+        }
+      />
+    </Section>
+  );
+}

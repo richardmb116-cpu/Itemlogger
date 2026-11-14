@@ -60,7 +60,8 @@ export function itemPhoto(item: { photoUri: string | null; category: Category })
   source: ImageSource | number;
   isOwn: boolean;
 } {
-  if (item.photoUri) return { source: photoSource(item.photoUri), isOwn: true };
+  // "remote:" photos are still downloading from sync; show the category photo until they arrive.
+  if (item.photoUri && !item.photoUri.startsWith('remote:')) return { source: photoSource(item.photoUri), isOwn: true };
   return { source: CATEGORY_PHOTOS[item.category], isOwn: false };
 }
 

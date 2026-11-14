@@ -44,3 +44,6 @@ example
 
 # Web preview build
 dist-preview/
+
+# Local Supabase settings (see .env.example)
+.env

@@ -51,7 +51,10 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
   Flags gaps first (missing receipts, photos, serials) and warns when items cost more than the contents
   sum insured. Shared from the iPhone share sheet; previewed on screen in the browser.
 - **Search and filters** by name, store, serial, work, personal and sold.
-- Light and dark mode, with all data stored on the device.
+- **Sync across devices** (optional): sign in with an emailed 6-digit code and your items, photos, receipts
+  and settings stay the same on iPhone and iPad, backed up in Supabase. Offline-first: everything works
+  without an account, edits queue on the device, and the most recent edit wins when two devices disagree.
+- Light and dark mode.
 
 ## Run it on your iPhone
 
@@ -69,6 +72,30 @@ No Mac or Xcode is needed for development. To ship to the App Store later, use E
 Use `npm run web` for a quick browser preview, or `npm run build:preview` to build a self-contained web
 preview in `dist-preview/` that can be hosted under any path (for example as a private Claude artifact). Camera, the native date picker and the tab bar look
 different there; the iPhone is the real target.
+
+## Sync backend (Supabase)
+
+Vestle runs entirely on the device until you connect a backend. To turn on sync:
+
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In **SQL Editor**, paste and run `supabase/migrations/0001_vestle_sync.sql`. It creates the `items` and
+   `user_settings` tables, a private `photos` storage bucket, and row-level security so each account only
+   ever sees its own data. It's safe to run again.
+3. In **Authentication → Emails → Magic Link**, put `{{ .Token }}` in the email body (e.g. "Your Vestle code
+   is {{ .Token }}") so sign-in emails contain the 6-digit code the app asks for. Supabase's built-in email
+   sender allows only a few emails an hour; add your own SMTP under **Authentication → SMTP** before
+   inviting other people.
+4. From **Project Settings → API keys**, copy the project URL and the **publishable** key into `.env`
+   (see `.env.example`). The publishable key is designed to ship inside apps; never put the secret
+   (service role) key in the app.
+5. Restart `npm start`. For EAS builds, add the same two variables with `npx eas-cli@latest env:create`,
+   because `.env` isn't committed.
+
+How it works: `src/lib/sync.ts` pulls rows changed since the last sync, merges them
+(`src/lib/sync-merge.ts`, unit-tested), then pushes this device's queued changes (`src/lib/outbox.ts`).
+Each item is stored as JSON, so new app fields need no database migration. The server also refuses
+to let an older edit overwrite a newer one. Photos upload once to `photos/<user id>/` and download
+on other devices. Signing out keeps items on the device.
 
 ## Design
 
@@ -127,5 +154,5 @@ Built one at a time:
 6. Receipt OCR, barcode and serial scanning, and email receipt import
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
 8. Rooms and locations, move mode, lending tracker, maintenance reminders
-9. iCloud backup, shared household and a trusted contact
+9. ~~Sync and backup~~ (Supabase); shared household and a trusted contact
 10. Home and Lock Screen widgets (next warranty to expire, total home value). Needs a development build, as Expo Go can't run widgets
