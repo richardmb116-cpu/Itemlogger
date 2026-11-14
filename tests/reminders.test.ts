@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { MAX_SCHEDULED, planReminders, reminderSummary } from '../src/lib/reminder-plan';
+import { MAX_SCHEDULED, planBirthdays, planNotifications, planReminders, reminderSummary } from '../src/lib/reminder-plan';
 import type { Item } from '../src/lib/types';
 
 const now = new Date(2026, 10, 14, 12, 0); // 14 Nov 2026, noon local
@@ -57,4 +57,25 @@ test('summary text', () => {
   assert.equal(reminderSummary([0]), 'On the day it ends');
   assert.equal(reminderSummary([30, 7, 0]), '30 days and 1 week before, and on the day');
   assert.equal(reminderSummary([]), 'No reminders');
+});
+
+test('birthday notifications: next anniversary at 9am with value, skipping today if 9am passed', () => {
+  // now = 14 Nov 2026, noon. Bought 14 Nov 2025: today's 9am has passed, so next is its 2nd birthday.
+  const [b] = planBirthdays([item('b1', '2025-11-14', 12)], 'US', now);
+  assert.equal(b.id, 'birthday-b1-2');
+  assert.equal(b.date.toString(), new Date(2027, 10, 14, 9).toString());
+  assert.match(b.title, /^Happy 2nd birthday, Item b1$/);
+  assert.match(b.body, /worth about \$\d+ now, down \d+% from what you paid/);
+  const [c] = planBirthdays([item('c1', '2024-12-01', null)], 'US', now);
+  assert.equal(c.id, 'birthday-c1-2');
+  assert.equal(c.date.toString(), new Date(2026, 11, 1, 9).toString());
+});
+
+test('combined plan puts warranties first and respects the limit', () => {
+  const many = Array.from({ length: 40 }, (_, i) => item(`w${i}`, `2026-0${(i % 9) + 1}-15`, 24));
+  const plan = planNotifications(many, { warranties: true, leadDays: [30, 7], birthdays: true, region: 'US' }, now);
+  assert.equal(plan.length, MAX_SCHEDULED);
+  assert.ok(plan.slice(0, 60).every((p) => p.id.startsWith('warranty-')));
+  const only = planNotifications(many.slice(0, 2), { warranties: false, leadDays: [30], birthdays: true, region: 'US' }, now);
+  assert.ok(only.length === 2 && only.every((p) => p.id.startsWith('birthday-')));
 });

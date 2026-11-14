@@ -21,6 +21,7 @@ const settings: Settings = {
   depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
   insurance: { insurer: 'Acme Insurance', policyNumber: 'HC-123', sumInsured: 2500 },
   remindersEnabled: false,
+  birthdaysEnabled: true,
   reminderDays: [30, 7],
   remindersPromptDismissed: false,
 };

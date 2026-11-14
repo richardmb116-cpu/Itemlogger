@@ -7,7 +7,7 @@ import { AppText, Chip, Row, ScreenTitle, Section, Segmented } from '@/component
 import { Spacing, useColors } from '@/constants/theme';
 import { planReminders, REMINDER_HOUR, REMINDER_OPTIONS, reminderSummary } from '@/lib/reminder-plan';
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
-import { openSystemSettings, remindersSupported } from '@/lib/reminders';
+import { openSystemSettings, remindersSupported, requestPermission } from '@/lib/reminders';
 import { useStore } from '@/lib/store';
 import { coverageCheck } from '@/lib/claim-pack';
 import { formatMoney, parsePrice } from '@/lib/format';
@@ -47,6 +47,15 @@ export default function SettingsScreen() {
   const on = settings.remindersEnabled;
   const blocked = on && permission === 'denied';
   const scheduled = on && !blocked ? planReminders(items, settings.reminderDays).length : 0;
+
+  const toggleBirthdays = async (value: boolean) => {
+    if (!value) {
+      updateSettings({ birthdaysEnabled: false });
+      return;
+    }
+    updateSettings({ birthdaysEnabled: true });
+    if (remindersSupported && (await requestPermission()) !== 'granted') explainBlockedNotifications();
+  };
 
   const toggleReminders = async (value: boolean) => {
     if (!value) {
@@ -179,6 +188,23 @@ export default function SettingsScreen() {
               )}
             </>
           ) : null}
+        </Section>
+
+        <Section
+          title="Item birthdays"
+          footer={
+            remindersSupported
+              ? `A note at ${hour} on each purchase anniversary, with what the item is worth now.`
+              : 'Item birthday notifications work in the iPhone app, not in the browser preview.'
+          }>
+          <Row label="Celebrate birthdays" icon="gift-outline" last>
+            <Switch
+              value={settings.birthdaysEnabled}
+              onValueChange={toggleBirthdays}
+              trackColor={{ true: c.green, false: c.fill }}
+              accessibilityLabel="Item birthdays"
+            />
+          </Row>
         </Section>
 
         <Section title="Insurance" footer={coverageNote}>

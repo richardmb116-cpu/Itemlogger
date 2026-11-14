@@ -3,7 +3,8 @@ import { Linking } from 'react-native';
 
 import type { PlannedReminder } from './reminder-plan';
 
-const PREFIX = 'warranty-';
+/** Identifiers of notifications this app schedules (so others are never touched). */
+const PREFIXES = ['warranty-', 'birthday-'];
 
 // Show reminders as a banner even when the app is open.
 Notifications.setNotificationHandler({
@@ -54,7 +55,7 @@ export async function cancelReminders(): Promise<void> {
   const pending = await Notifications.getAllScheduledNotificationsAsync();
   await Promise.all(
     pending
-      .filter((n) => n.identifier.startsWith(PREFIX))
+      .filter((n) => PREFIXES.some((p) => n.identifier.startsWith(p)))
       .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
   );
 }

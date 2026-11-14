@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/ui';
 import { OnPhoto, Radius, Spacing, useColors, type Palette } from '@/constants/theme';
+import { ageOf } from '@/lib/birthdays';
 import { formatDate, formatMoney } from '@/lib/format';
 import { itemPhoto } from '@/lib/photos';
 import type { Item, TaxRegion } from '@/lib/types';
@@ -75,7 +76,9 @@ export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegi
           {item.name}
         </AppText>
         <AppText variant="subhead" color={c.textSecondary} numberOfLines={1}>
-          {[item.store, formatDate(item.purchaseDate, region)].filter(Boolean).join(' · ')}
+          {[item.sold ? formatDate(item.purchaseDate, region) : ageOf(item.purchaseDate).label, item.store]
+            .filter(Boolean)
+            .join(' · ')}
         </AppText>
         <View style={styles.rowBadges}>
           {item.sold ? null : <WarrantyPill item={item} />}

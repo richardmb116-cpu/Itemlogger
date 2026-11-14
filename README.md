@@ -25,6 +25,9 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 - **Resale value**: an estimate of what each item would sell for second-hand today, from its category's
   resale curve, age, condition and remaining warranty (`src/lib/valuation.ts`). Shown as a likely range,
   with what it has lost since purchase and what it would likely fetch in a year.
+- **Item ages and birthdays**: every item shows how old it is. On each purchase anniversary you get a
+  9 am "Happy 1st birthday" notification with what it's worth now, plus a card on Home and a banner on
+  the item page. Switch off in Settings → Item birthdays.
 - **Real price checks**: one tap opens eBay sold listings, Facebook Marketplace or Gumtree (AU) searches for
   the item's make and model. Enter what you see as "your price" and it replaces the estimate everywhere,
   flagged for a re-check after 90 days. No scraping, API keys or running costs.

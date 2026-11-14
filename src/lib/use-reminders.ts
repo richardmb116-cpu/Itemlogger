@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { planReminders, type PlannedReminder } from './reminder-plan';
+import { planNotifications, type PlannedReminder } from './reminder-plan';
 import {
   cancelReminders,
   getPermission,
@@ -54,13 +54,19 @@ export function useReminderSync() {
   const { permission, refresh } = useReminderPermission();
   // Re-check right after the user switches reminders on (the iOS prompt may have just been answered).
   useEffect(() => refresh(), [settings.remindersEnabled, refresh]);
-  const active = remindersSupported && settings.remindersEnabled && permission === 'granted';
+  const wantsAny = settings.remindersEnabled || settings.birthdaysEnabled;
+  const active = remindersSupported && wantsAny && permission === 'granted';
 
   // The plan, serialized: rescheduling only happens when a reminder actually changes,
   // so edits to notes or photos don't touch notifications.
   const planKey = active
     ? JSON.stringify(
-        planReminders(items, settings.reminderDays).map((r) => ({ ...r, date: r.date.toISOString() })),
+        planNotifications(items, {
+          warranties: settings.remindersEnabled,
+          leadDays: settings.reminderDays,
+          birthdays: settings.birthdaysEnabled,
+          region: settings.taxRegion,
+        }).map((r) => ({ ...r, date: r.date.toISOString() })),
       )
     : '';
 

@@ -6,9 +6,10 @@ import { useMemo, useState, type ComponentProps } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ItemCard, ItemRow } from '@/components/item-bits';
+import { ItemCard, ItemRow, ItemThumb } from '@/components/item-bits';
 import { AppText, Chip, IconButton, SectionHeading, tap } from '@/components/ui';
 import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
+import { ordinal, upcomingBirthdays } from '@/lib/birthdays';
 import { CATEGORIES, categoryInfo } from '@/lib/categories';
 import { formatMoney } from '@/lib/format';
 import { CATEGORY_PHOTOS, HOME_HERO_PHOTO } from '@/lib/photos';
@@ -54,6 +55,7 @@ export default function ItemsScreen() {
   const paid = owned.reduce((sum, i) => sum + (i.price ?? 0), 0);
   const worth = owned.reduce((sum, i) => sum + (values.get(i.id) ?? 0), 0);
   const workCount = owned.filter((i) => i.use === 'work').length;
+  const birthdays = upcomingBirthdays(owned, 7);
   const usedCategories = CATEGORIES.filter((cat) => owned.some((i) => i.category === cat.id));
 
   const q = query.trim().toLowerCase();
@@ -221,6 +223,42 @@ export default function ItemsScreen() {
                 </View>
               </View>
               <Ionicons name="notifications" size={44} color={c.onInk} style={{ opacity: 0.18 }} />
+            </View>
+          ) : null}
+
+          {/* Birthdays this week */}
+          {birthdays.length > 0 && !category && !use ? (
+            <View style={[styles.birthdays, { backgroundColor: c.card }]}>
+              <View style={styles.birthdaysHead}>
+                <Ionicons name="gift" size={16} color={c.ink} />
+                <AppText variant="eyebrow" color={c.textSecondary}>
+                  {birthdays[0].birthday.daysUntil === 0 ? 'Celebrating today' : 'Birthdays this week'}
+                </AppText>
+              </View>
+              {birthdays.slice(0, 3).map(({ item, birthday }) => (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="button"
+                  onPress={() => open(item.id)}
+                  style={({ pressed }) => [styles.birthdayRow, { opacity: pressed ? 0.6 : 1 }]}>
+                  <ItemThumb item={item} size={48} radius={14} />
+                  <View style={{ flex: 1 }}>
+                    <AppText variant="headline" numberOfLines={2}>
+                      {birthday.daysUntil === 0
+                        ? `Happy ${ordinal(birthday.turning)} birthday, ${item.name}`
+                        : `${item.name} turns ${birthday.turning}`}
+                    </AppText>
+                    <AppText variant="footnote" color={c.textSecondary}>
+                      {birthday.daysUntil === 0
+                        ? `Worth about ${formatMoney(values.get(item.id) ?? null, region)} today`
+                        : birthday.daysUntil === 1
+                          ? 'Tomorrow'
+                          : `In ${birthday.daysUntil} days`}
+                    </AppText>
+                  </View>
+                  <Ionicons name="chevron-forward" size={17} color={c.textTertiary} />
+                </Pressable>
+              ))}
             </View>
           ) : null}
 
@@ -437,6 +475,17 @@ const styles = StyleSheet.create({
   },
   promptActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, marginTop: Spacing.md },
   promptButton: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 999 },
+  birthdays: {
+    marginHorizontal: Spacing.lg,
+    marginTop: -Spacing.md,
+    marginBottom: Spacing.xxl,
+    padding: Spacing.lg,
+    gap: Spacing.md,
+    borderRadius: Radius.xxl,
+    borderCurve: 'continuous',
+  },
+  birthdaysHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  birthdayRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   shelf: { gap: Spacing.md, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xxl },
   tile: {
     width: 150,

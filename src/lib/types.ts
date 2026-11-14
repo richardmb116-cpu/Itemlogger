@@ -89,6 +89,8 @@ export type Settings = {
   remindersEnabled: boolean;
   /** Days before expiry to remind; 0 = on the day. */
   reminderDays: number[];
+  /** Notify on each purchase anniversary ("Happy 1st birthday"). */
+  birthdaysEnabled: boolean;
   /** The "turn on reminders" card on the Items screen was dismissed. */
   remindersPromptDismissed: boolean;
 };

@@ -1,5 +1,8 @@
+import { nextBirthday, ordinal } from './birthdays';
 import { parseISODate } from './dates';
-import type { Item } from './types';
+import { formatMoney } from './format';
+import type { Item, TaxRegion } from './types';
+import { currentValue } from './valuation';
 import { warrantyStatus } from './warranty';
 
 /** Lead times users can pick, in days before the warranty ends. 0 = on the day. */
@@ -83,4 +86,50 @@ export function reminderSummary(leadDays: number[]): string {
   if (parts.length === 0) return 'No reminders';
   const text = parts.join(', and ');
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+/** "Happy 1st birthday" notifications on each purchase anniversary, at the usual reminder time. */
+export function planBirthdays(items: Item[], region: TaxRegion, now = new Date()): PlannedReminder[] {
+  const plan: PlannedReminder[] = [];
+  for (const item of items) {
+    if (item.sold) continue;
+    // Look from today; if today's 9am has passed, the next one is next year.
+    let b = nextBirthday(item.purchaseDate, now);
+    let at = birthdayAt(b.date);
+    if (at.getTime() <= now.getTime()) {
+      b = nextBirthday(item.purchaseDate, new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+      at = birthdayAt(b.date);
+    }
+    const value = currentValue(item, at);
+    const lost = value && item.price ? Math.round((Math.max(0, item.price - value.amount) / item.price) * 100) : null;
+    plan.push({
+      id: `birthday-${item.id}-${b.turning}`,
+      itemId: item.id,
+      date: at,
+      title: `Happy ${ordinal(b.turning)} birthday, ${item.name}`,
+      body: value
+        ? `It's worth about ${formatMoney(value.amount, region)} now${lost != null ? `, down ${lost}% from what you paid` : ''}. Tap to see what it would sell for.`
+        : `${b.turning} year${b.turning === 1 ? '' : 's'} together. Tap to see its warranty and value.`,
+    });
+  }
+  return plan.sort((a, b) => a.date.getTime() - b.date.getTime());
+}
+
+function birthdayAt(iso: string): Date {
+  const d = parseISODate(iso);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), REMINDER_HOUR, 0, 0, 0);
+}
+
+/**
+ * Everything to schedule: warranty reminders first (they matter most), then birthdays,
+ * within the iOS limit on pending notifications.
+ */
+export function planNotifications(
+  items: Item[],
+  opts: { warranties: boolean; leadDays: number[]; birthdays: boolean; region: TaxRegion },
+  now = new Date(),
+): PlannedReminder[] {
+  const warranties = opts.warranties ? planReminders(items, opts.leadDays, now) : [];
+  const birthdays = opts.birthdays ? planBirthdays(items, opts.region, now) : [];
+  return [...warranties, ...birthdays.slice(0, Math.max(0, MAX_SCHEDULED - warranties.length))];
 }

@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { warrantyColors } from '@/components/item-bits';
 import { AppText, GlassButton, PillButton, Row, Section } from '@/components/ui';
 import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
+import { ageOf, nextBirthday, ordinal } from '@/lib/birthdays';
 import { categoryInfo } from '@/lib/categories';
 import { formatDate, formatMoney } from '@/lib/format';
 import { todayISO, toISODate } from '@/lib/dates';
@@ -39,6 +40,9 @@ export default function ItemDetailScreen() {
   const region = settings.taxRegion;
   const cat = categoryInfo(item.category);
   const photo = itemPhoto(item);
+  const age = ageOf(item.purchaseDate);
+  const birthday = nextBirthday(item.purchaseDate);
+  const birthdayToday = !item.sold && birthday.daysUntil === 0;
   const status = warrantyStatus(item);
   const col = warrantyColors(status.state, c);
   const taxYear = taxYearFor(item.purchaseDate, region);
@@ -102,6 +106,20 @@ export default function ItemDetailScreen() {
         </View>
 
         <View style={[styles.sheet, { backgroundColor: c.background }]}>
+          {birthdayToday ? (
+            <View style={[styles.birthday, { backgroundColor: c.ink }]}>
+              <Ionicons name="gift" size={22} color={c.onInk} />
+              <View style={{ flex: 1 }}>
+                <AppText variant="headline" color={c.onInk}>
+                  Happy {ordinal(birthday.turning)} birthday!
+                </AppText>
+                <AppText variant="footnote" color={c.onInk} style={{ opacity: 0.7 }}>
+                  {birthday.turning} year{birthday.turning === 1 ? '' : 's'} together
+                  {value ? `, and it's still worth about ${formatMoney(value.amount, region)}.` : '.'}
+                </AppText>
+              </View>
+            </View>
+          ) : null}
         <View style={styles.headline}>
           <AppText variant="eyebrow" color={c.textSecondary}>
             {cat.label}
@@ -115,6 +133,7 @@ export default function ItemDetailScreen() {
 
         {/* Outlined info pills, like the storage picker */}
         <View style={styles.pills}>
+          <InfoPill icon="hourglass-outline" label={age.label} />
           <InfoPill icon="calendar-outline" label={formatDate(item.purchaseDate, region)} />
           <InfoPill icon="document-text-outline" label={taxYear.label} />
           <InfoPill icon={item.use === 'work' ? 'briefcase-outline' : 'home-outline'} label={item.use === 'work' ? 'Work' : 'Personal'} />
@@ -257,6 +276,16 @@ export default function ItemDetailScreen() {
 
         <Section title="Details">
           <Row label="Purchased" value={formatDate(item.purchaseDate, region, 'long')} />
+          {item.sold ? null : (
+            <Row
+              label="Next birthday"
+              value={
+                birthday.daysUntil === 0
+                  ? 'Today'
+                  : `${formatDate(birthday.date, region)} · turns ${birthday.turning}`
+              }
+            />
+          )}
           <Row label="Model" value={item.model || '—'} />
           <Row label="Store" value={item.store || '—'} />
           <Row label="Serial number" value={item.serial || '—'} />
@@ -347,6 +376,16 @@ const styles = StyleSheet.create({
     backgroundColor: OnPhoto.glass,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: OnPhoto.glassBorder,
+  },
+  birthday: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+    padding: Spacing.lg,
+    borderRadius: Radius.xl,
+    borderCurve: 'continuous',
   },
   sheet: { marginTop: -32, borderTopLeftRadius: 32, borderTopRightRadius: 32, borderCurve: 'continuous', paddingTop: Spacing.sm },
   topControls: {

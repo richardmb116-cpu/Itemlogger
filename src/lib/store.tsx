@@ -16,6 +16,7 @@ const DEFAULT_SETTINGS: Settings = {
   depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
   insurance: { insurer: '', policyNumber: '', sumInsured: null },
   remindersEnabled: false,
+  birthdaysEnabled: true,
   reminderDays: DEFAULT_REMINDER_DAYS,
   remindersPromptDismissed: false,
 };
@@ -152,7 +153,7 @@ function sampleItems(region: TaxRegion): Item[] {
     { name: 'Herman Miller Aeron', photoUri: bundledUri('chair'), model: 'Herman Miller Aeron size B', category: 'furniture', price: 2150, purchaseDate: ago(14), store: us ? 'Design Within Reach' : 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', workPercent: 100, use: 'work' },
     { name: 'Breville Barista Express', photoUri: bundledUri('coffee'), model: 'Breville BES870', category: 'kitchen', price: 899, purchaseDate: ago(30), store: us ? 'Williams Sonoma' : 'Myer', serial: 'BES870BSS', warrantyMonths: 24, condition: 'fair', workPercent: 100, use: 'personal' },
     { name: 'Sony WH-1000XM6', photoUri: bundledUri('headphones'), model: 'Sony WH-1000XM6', category: 'electronics', price: 649.95, purchaseDate: ago(1), store: 'Amazon', serial: '5512093', warrantyMonths: 12, condition: 'like-new', workPercent: 50, use: 'work' },
-    { name: 'Makita drill kit', photoUri: bundledUri('drill'), model: 'Makita DHP487', category: 'tools', price: 389, purchaseDate: ago(8), store: us ? 'The Home Depot' : 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', workPercent: 100, use: 'personal' },
+    { name: 'Makita drill kit', photoUri: bundledUri('drill'), model: 'Makita DHP487', category: 'tools', price: 389, purchaseDate: ago(12, now.getDate()), store: us ? 'The Home Depot' : 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', workPercent: 100, use: 'personal' },
   ];
   return rows.map((r, i) => ({ ...base, ...r, id: `sample-${i}-${newId()}` }));
 }
