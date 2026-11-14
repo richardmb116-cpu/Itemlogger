@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bgC" cx="30%" cy="18%" r="95%">
+      <stop offset="0" stop-color="#26262B"/><stop offset="1" stop-color="#08080A"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bgC)"/>
+  <!-- The original price tag, now carrying a V -->
+  <g transform="rotate(-18 512 512)">
+    <path d="M330 300 H760 Q820 300 820 360 V664 Q820 724 760 724 H330 Q312 724 298 712 L170 538 Q156 512 170 486 L298 312 Q312 300 330 300 Z" fill="#FFFFFF"/>
+    <circle cx="282" cy="512" r="44" fill="#2B4EFF"/>
+    <path d="M430 400 L560 640 L690 400" fill="none" stroke="#0B0B0C" stroke-width="86" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

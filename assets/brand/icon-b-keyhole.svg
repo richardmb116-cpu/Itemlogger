@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bgB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#ECECE8"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bgB)"/>
+  <!-- A solid V whose notch holds a blue keyhole: a vault for your things -->
+  <path d="M214 262 H404 L512 548 L620 262 H810 L604 778 Q596 798 575 798 H449 Q428 798 420 778 Z" fill="#0B0B0C"/>
+  <circle cx="512" cy="330" r="46" fill="#2B4EFF"/>
+  <path d="M492 360 H532 L546 452 Q547 462 537 462 H487 Q477 462 478 452 Z" fill="#2B4EFF"/>
+</svg>

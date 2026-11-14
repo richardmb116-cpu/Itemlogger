@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <radialGradient id="bgA" cx="30%" cy="18%" r="95%">
+      <stop offset="0" stop-color="#26262B"/><stop offset="1" stop-color="#08080A"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bgA)"/>
+  <!-- A bold V; its right arm ends in the blue "tag hole" from the original icon -->
+  <path d="M292 318 L512 742 L716 346" fill="none" stroke="#FFFFFF" stroke-width="128" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="722" cy="334" r="80" fill="#2B4EFF"/>
+</svg>
