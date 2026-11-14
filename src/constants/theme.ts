@@ -1,41 +1,43 @@
 import { useColorScheme } from 'react-native';
 
 /**
- * iOS-style palette: grouped backgrounds, white cards, one accent.
- * Values follow Apple's system colours so the app feels native in light and dark mode.
+ * Apple Store-style palette: white pages, soft grey (#F5F5F7) tiles, Apple blue accent.
+ * Dark mode mirrors it with black pages and elevated grey tiles.
  */
 export const Colors = {
   light: {
-    accent: '#0E8A6A',
-    accentSoft: '#DDF3EC',
+    accent: '#0071E3',
+    accentSoft: '#E8F1FD',
     onAccent: '#FFFFFF',
-    background: '#F2F2F7',
-    card: '#FFFFFF',
-    cardPressed: '#E5E5EA',
-    text: '#000000',
-    textSecondary: '#6C6C70',
+    background: '#FFFFFF',
+    card: '#F5F5F7',
+    cardPressed: '#E8E8ED',
+    raised: '#FFFFFF',
+    text: '#1D1D1F',
+    textSecondary: '#6E6E73',
     textTertiary: '#A1A1A6',
-    separator: '#C6C6C8',
-    fill: '#E9E9EE',
+    separator: '#D2D2D7',
+    fill: '#EBEBF0',
     green: '#248A3D',
     greenSoft: '#E3F5E7',
     orange: '#C25E00',
     orangeSoft: '#FFF0DC',
     red: '#D70015',
     redSoft: '#FFE5E7',
-    grey: '#6C6C70',
-    greySoft: '#EDEDF0',
+    grey: '#6E6E73',
+    greySoft: '#EBEBF0',
   },
   dark: {
-    accent: '#34C79A',
-    accentSoft: '#11372D',
-    onAccent: '#00140E',
+    accent: '#2997FF',
+    accentSoft: '#0B2847',
+    onAccent: '#FFFFFF',
     background: '#000000',
     card: '#1C1C1E',
     cardPressed: '#2C2C2E',
-    text: '#FFFFFF',
-    textSecondary: '#AEAEB2',
-    textTertiary: '#6C6C70',
+    raised: '#3A3A3C',
+    text: '#F5F5F7',
+    textSecondary: '#A1A1A6',
+    textTertiary: '#6E6E73',
     separator: '#38383A',
     fill: '#2C2C2E',
     green: '#30D158',
@@ -44,7 +46,7 @@ export const Colors = {
     orangeSoft: '#33240A',
     red: '#FF6961',
     redSoft: '#3A1414',
-    grey: '#AEAEB2',
+    grey: '#A1A1A6',
     greySoft: '#2C2C2E',
   },
 } as const;
@@ -69,12 +71,13 @@ export const Radius = {
   md: 12,
   lg: 16,
   xl: 22,
+  xxl: 28,
 } as const;
 
 /** iOS Dynamic Type default sizes. */
 export const Type = {
-  largeTitle: { fontSize: 34, fontWeight: '700', letterSpacing: 0.4 },
-  title2: { fontSize: 22, fontWeight: '700' },
+  largeTitle: { fontSize: 34, fontWeight: '700', letterSpacing: -0.4 },
+  title2: { fontSize: 22, fontWeight: '700', letterSpacing: -0.3 },
   title3: { fontSize: 20, fontWeight: '600' },
   headline: { fontSize: 17, fontWeight: '600' },
   body: { fontSize: 17, fontWeight: '400' },

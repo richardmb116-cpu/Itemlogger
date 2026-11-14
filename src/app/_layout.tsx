@@ -19,11 +19,17 @@ export default function RootLayout() {
     <StoreProvider>
       <ThemeProvider value={theme}>
         <StatusBar style="auto" />
-        <Stack screenOptions={{ headerTintColor: c.accent, contentStyle: { backgroundColor: c.background } }}>
+        <Stack
+          screenOptions={{
+            headerTintColor: c.accent,
+            headerStyle: { backgroundColor: c.background },
+            headerShadowVisible: false,
+            contentStyle: { backgroundColor: c.background },
+          }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Items' }} />
           <Stack.Screen
             name="item/[id]"
-            options={{ title: '', headerTransparent: true, headerBackButtonDisplayMode: 'minimal' }}
+            options={{ title: '', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
           />
           <Stack.Screen name="item/edit" options={{ presentation: 'modal', title: 'New item' }} />
         </Stack>

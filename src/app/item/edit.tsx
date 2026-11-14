@@ -164,11 +164,10 @@ export default function EditItemScreen() {
                 key={o.label}
                 label={o.label}
                 selected={warrantyMonths === o.months}
-                onCard
                 onPress={() => setWarrantyMonths(o.months)}
               />
             ))}
-            {isCustomWarranty ? <Chip label={`${warrantyMonths} mo`} selected onCard onPress={() => {}} /> : null}
+            {isCustomWarranty ? <Chip label={`${warrantyMonths} mo`} selected onPress={() => {}} /> : null}
           </ScrollView>
         </Section>
 
@@ -273,7 +272,7 @@ function PhotoSlot({
         </>
       ) : (
         <>
-          <View style={[styles.slotIcon, { backgroundColor: c.accentSoft }]}>
+          <View style={[styles.slotIcon, { backgroundColor: c.raised }]}>
             <Ionicons name={icon} size={24} color={c.accent} />
           </View>
           <AppText variant="subhead" style={{ fontWeight: '600' }}>
@@ -293,7 +292,7 @@ const styles = StyleSheet.create({
   slot: {
     flex: 1,
     aspectRatio: 1,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xxl,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,

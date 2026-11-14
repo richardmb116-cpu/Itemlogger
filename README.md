@@ -28,6 +28,13 @@ No Mac or Xcode is needed for development. To ship to the App Store later, use E
 Use `npm run web` for a quick browser preview. Camera, the native date picker and the tab bar look
 different there; the iPhone is the real target.
 
+## Design
+
+The UI follows the Apple Store app look in [`docs/design/reference.webp`](docs/design/reference.webp):
+white pages, soft grey (`#F5F5F7`) tiles behind images, Apple blue (`#0071E3`) pill buttons, bold
+left-aligned section headings, horizontal shelves and outlined pill chips. Colours live in
+`src/constants/theme.ts`; shared pieces (chips, pills, headings, rows) are in `src/components/`.
+
 ## Development
 
 ```bash

@@ -64,9 +64,9 @@ export function IconButton({
       hitSlop={8}
       style={({ pressed }) => [
         styles.iconButton,
-        { backgroundColor: filled ? c.accent : c.fill, opacity: pressed ? 0.7 : 1 },
+        { backgroundColor: filled ? c.accent : c.card, opacity: pressed ? 0.7 : 1 },
       ]}>
-      <Ionicons name={icon} size={22} color={filled ? c.onAccent : c.accent} />
+      <Ionicons name={icon} size={20} color={filled ? c.onAccent : c.text} />
     </Pressable>
   );
 }
@@ -174,7 +174,7 @@ export function Segmented<T extends string>({
                 onChange(o.value);
               }
             }}
-            style={[styles.segment, selected && [styles.segmentSelected, { backgroundColor: c.card }]]}>
+            style={[styles.segment, selected && [styles.segmentSelected, { backgroundColor: c.raised }]]}>
             <AppText variant="subhead" style={{ fontWeight: selected ? '600' : '500' }}>
               {o.label}
             </AppText>
@@ -185,18 +185,8 @@ export function Segmented<T extends string>({
   );
 }
 
-export function Chip({
-  label,
-  selected,
-  onPress,
-  onCard,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-  /** Use a tinted background when the chip sits on a white card. */
-  onCard?: boolean;
-}) {
+/** Outlined pill, filled blue when selected (like the storage picker in Apple's store). */
+export function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
   const c = useColors();
   return (
     <Pressable
@@ -206,11 +196,53 @@ export function Chip({
         tap();
         onPress();
       }}
-      style={[styles.chip, { backgroundColor: selected ? c.accent : onCard ? c.fill : c.card }]}>
+      style={[
+        styles.chip,
+        selected
+          ? { backgroundColor: c.accent, borderColor: c.accent }
+          : { backgroundColor: 'transparent', borderColor: c.separator },
+      ]}>
       <AppText variant="subhead" color={selected ? c.onAccent : c.text} style={{ fontWeight: '600' }}>
         {label}
       </AppText>
     </Pressable>
+  );
+}
+
+/** Small blue pill, like the "Buy" button. */
+export function PillButton({ label, onPress, size = 'sm' }: { label: string; onPress: () => void; size?: 'sm' | 'lg' }) {
+  const c = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => {
+        tap();
+        onPress();
+      }}
+      hitSlop={6}
+      style={({ pressed }) => [
+        size === 'lg' ? styles.pillLg : styles.pillSm,
+        { backgroundColor: c.accent, opacity: pressed ? 0.8 : 1 },
+      ]}>
+      <AppText variant={size === 'lg' ? 'headline' : 'caption'} color={c.onAccent} style={{ fontWeight: '600' }}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+/** Bold left-aligned section heading with an optional link on the right. */
+export function SectionHeading({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) {
+  const c = useColors();
+  return (
+    <View style={styles.heading}>
+      <AppText variant="title2">{title}</AppText>
+      {action && onAction ? (
+        <AppText variant="subhead" color={c.accent} onPress={onAction} suppressHighlighting>
+          {action}
+        </AppText>
+      ) : null}
+    </View>
   );
 }
 
@@ -251,7 +283,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { marginHorizontal: Spacing.xl + Spacing.lg, marginBottom: 6 },
   sectionFooter: { marginHorizontal: Spacing.xl + Spacing.lg, marginTop: 6 },
-  sectionBody: { marginHorizontal: Spacing.lg, borderRadius: Radius.md, overflow: 'hidden' },
+  sectionBody: { marginHorizontal: Spacing.lg, borderRadius: Radius.lg, overflow: 'hidden' },
   row: { flexDirection: 'row', alignItems: 'center', paddingLeft: Spacing.lg, minHeight: 46 },
   rowInner: {
     flex: 1,
@@ -273,14 +305,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 2,
   },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999 },
+  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, borderWidth: 1 },
+  pillSm: { paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, alignSelf: 'flex-start' },
+  pillLg: { paddingHorizontal: 24, height: 44, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  heading: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+  },
   primary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
     height: 50,
-    borderRadius: Radius.md,
+    borderRadius: 999,
     paddingHorizontal: Spacing.xl,
   },
 });

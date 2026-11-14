@@ -108,7 +108,7 @@ export default function TaxScreen() {
                 onPress={() => router.push(`/item/${item.id}`)}
                 chevron>
                 <View style={styles.workRow}>
-                  <ItemThumb item={item} size={36} />
+                  <ItemThumb item={item} size={40} onTile />
                   <View style={{ flex: 1 }}>
                     <AppText numberOfLines={1}>{item.name}</AppText>
                     <AppText variant="footnote" color={c.textSecondary}>
