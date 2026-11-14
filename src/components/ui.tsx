@@ -210,7 +210,18 @@ export function Chip({ label, selected, onPress }: { label: string; selected: bo
 }
 
 /** Small blue pill, like the "Buy" button. */
-export function PillButton({ label, onPress, size = 'sm' }: { label: string; onPress: () => void; size?: 'sm' | 'lg' }) {
+export function PillButton({
+  label,
+  onPress,
+  size = 'sm',
+  secondary,
+}: {
+  label: string;
+  onPress: () => void;
+  size?: 'sm' | 'lg';
+  /** Grey pill with blue text, for the less important of two actions. */
+  secondary?: boolean;
+}) {
   const c = useColors();
   return (
     <Pressable
@@ -222,9 +233,12 @@ export function PillButton({ label, onPress, size = 'sm' }: { label: string; onP
       hitSlop={6}
       style={({ pressed }) => [
         size === 'lg' ? styles.pillLg : styles.pillSm,
-        { backgroundColor: c.accent, opacity: pressed ? 0.8 : 1 },
+        { backgroundColor: secondary ? c.card : c.accent, opacity: pressed ? 0.8 : 1 },
       ]}>
-      <AppText variant={size === 'lg' ? 'headline' : 'caption'} color={c.onAccent} style={{ fontWeight: '600' }}>
+      <AppText
+        variant={size === 'lg' ? 'headline' : 'caption'}
+        color={secondary ? c.accent : c.onAccent}
+        style={{ fontWeight: '600' }}>
         {label}
       </AppText>
     </Pressable>
@@ -246,8 +260,20 @@ export function SectionHeading({ title, action, onAction }: { title: string; act
   );
 }
 
-export function PrimaryButton({ label, icon, onPress }: { label: string; icon?: IconName; onPress: () => void }) {
+export function PrimaryButton({
+  label,
+  icon,
+  onPress,
+  secondary,
+}: {
+  label: string;
+  icon?: IconName;
+  onPress: () => void;
+  /** Grey tile with blue text, for the less important of two actions. */
+  secondary?: boolean;
+}) {
   const c = useColors();
+  const fg = secondary ? c.accent : c.onAccent;
   return (
     <Pressable
       accessibilityRole="button"
@@ -255,9 +281,9 @@ export function PrimaryButton({ label, icon, onPress }: { label: string; icon?: 
         tap();
         onPress();
       }}
-      style={({ pressed }) => [styles.primary, { backgroundColor: c.accent, opacity: pressed ? 0.8 : 1 }]}>
-      {icon ? <Ionicons name={icon} size={20} color={c.onAccent} /> : null}
-      <AppText variant="headline" color={c.onAccent}>
+      style={({ pressed }) => [styles.primary, { backgroundColor: secondary ? c.card : c.accent, opacity: pressed ? 0.8 : 1 }]}>
+      {icon ? <Ionicons name={icon} size={20} color={fg} /> : null}
+      <AppText variant="headline" color={fg}>
         {label}
       </AppText>
     </Pressable>

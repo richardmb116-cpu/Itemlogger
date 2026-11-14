@@ -10,7 +10,7 @@ const now = new Date(2026, 10, 14, 12, 0); // 14 Nov 2026, noon local
 function item(id: string, purchaseDate: string, warrantyMonths: number | null): Item {
   return {
     id, name: `Item ${id}`, category: 'other', price: 100, purchaseDate, store: '', serial: '',
-    warrantyMonths, use: 'personal', notes: '', photoUri: null, receiptUri: null, createdAt: '', updatedAt: '',
+    warrantyMonths, use: 'personal', condition: 'good', sold: null, notes: '', photoUri: null, receiptUri: null, createdAt: '', updatedAt: '',
   };
 }
 
@@ -37,6 +37,11 @@ test('skips reminders already in the past, keeps upcoming ones', () => {
 test('ignores items with no warranty or an expired one', () => {
   const plan = planReminders([item('c', '2026-01-01', null), item('d', '2020-01-01', 12)], [30, 7], now);
   assert.equal(plan.length, 0);
+});
+
+test('sold items get no reminders', () => {
+  const sold = { ...item('s', '2025-06-01', 24), sold: { price: 500, date: '2026-10-01' } };
+  assert.equal(planReminders([sold], [30, 7], now).length, 0);
 });
 
 test('caps at the iOS pending-notification limit, soonest first', () => {

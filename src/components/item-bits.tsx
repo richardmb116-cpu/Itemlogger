@@ -7,6 +7,7 @@ import { Radius, Spacing, useColors, type Palette } from '@/constants/theme';
 import { categoryInfo } from '@/lib/categories';
 import { formatDate, formatMoney } from '@/lib/format';
 import type { Item, TaxRegion } from '@/lib/types';
+import { valueItem } from '@/lib/valuation';
 import { warrantyStatus, type WarrantyState } from '@/lib/warranty';
 
 export function warrantyColors(state: WarrantyState, c: Palette) {
@@ -65,6 +66,7 @@ export function ItemThumb({
 /** List row: grey image tile on the left, name, price and status on the right. */
 export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegion; onPress: () => void }) {
   const c = useColors();
+  const worth = item.sold ? null : (valueItem(item)?.estimate ?? null);
   return (
     <Pressable
       accessibilityRole="button"
@@ -77,13 +79,18 @@ export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegi
           {item.name}
         </AppText>
         <AppText variant="subhead" style={{ fontVariant: ['tabular-nums'], fontWeight: '500' }}>
-          {formatMoney(item.price, region)}
+          {item.sold ? `Sold for ${formatMoney(item.sold.price, region)}` : formatMoney(item.price, region)}
+          {worth != null ? (
+            <AppText variant="subhead" color={c.textSecondary}>
+              {`  ·  worth about ${formatMoney(worth, region)}`}
+            </AppText>
+          ) : null}
         </AppText>
         <AppText variant="footnote" color={c.textSecondary} numberOfLines={1}>
           {[item.store, formatDate(item.purchaseDate, region)].filter(Boolean).join(' · ')}
         </AppText>
         <View style={styles.rowBadges}>
-          <WarrantyPill item={item} />
+          {item.sold ? null : <WarrantyPill item={item} />}
           {item.use === 'work' ? (
             <View style={[styles.pill, { backgroundColor: c.card }]}>
               <Ionicons name="briefcase" size={11} color={c.textSecondary} />

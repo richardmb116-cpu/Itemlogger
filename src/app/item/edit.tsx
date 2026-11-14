@@ -13,7 +13,8 @@ import { parsePrice } from '@/lib/format';
 import { deleteImage, persistImage, pickImage } from '@/lib/images';
 import { newId, useStore } from '@/lib/store';
 import { currencyFor, taxYearFor } from '@/lib/tax';
-import type { Category, Item, ItemUse } from '@/lib/types';
+import type { Category, Condition, Item, ItemUse } from '@/lib/types';
+import { CONDITIONS } from '@/lib/valuation';
 
 const WARRANTY_OPTIONS: { months: number | null; label: string }[] = [
   { months: null, label: 'None' },
@@ -38,6 +39,7 @@ export default function EditItemScreen() {
   const [serial, setSerial] = useState(existing?.serial ?? '');
   const [warrantyMonths, setWarrantyMonths] = useState<number | null>(existing ? existing.warrantyMonths : 12);
   const [use, setUse] = useState<ItemUse>(existing?.use ?? 'personal');
+  const [condition, setCondition] = useState<Condition>(existing?.condition ?? 'like-new');
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [photoUri, setPhotoUri] = useState<string | null>(existing?.photoUri ?? null);
   const [receiptUri, setReceiptUri] = useState<string | null>(existing?.receiptUri ?? null);
@@ -65,6 +67,8 @@ export default function EditItemScreen() {
       serial: serial.trim(),
       warrantyMonths,
       use,
+      condition,
+      sold: existing?.sold ?? null,
       notes: notes.trim(),
       photoUri: finalPhoto,
       receiptUri: finalReceipt,
@@ -154,6 +158,16 @@ export default function EditItemScreen() {
                 </Pressable>
               );
             })}
+          </View>
+        </Section>
+
+        <Section title="Condition" footer="Used to estimate what it would sell for second-hand.">
+          <View style={{ padding: Spacing.md }}>
+            <Segmented
+              value={condition}
+              onChange={setCondition}
+              options={CONDITIONS.map((o) => ({ value: o.id, label: o.label }))}
+            />
           </View>
         </Section>
 

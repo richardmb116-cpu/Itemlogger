@@ -35,6 +35,7 @@ export function planReminders(items: Item[], leadDays: number[], now = new Date(
   const leads = [...new Set(leadDays)].sort((a, b) => b - a);
 
   for (const item of items) {
+    if (item.sold) continue;
     const status = warrantyStatus(item, now);
     if (!status.expires || status.state === 'expired') continue;
     const end = parseISODate(status.expires);

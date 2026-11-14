@@ -11,7 +11,12 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
   your choice in Settings). Tapping one opens the item, showing its receipt and serial number.
 - **Tax**: switch between the Australian financial year (1 Jul – 30 Jun) and the US calendar year, and
   see work and personal purchase totals for each year.
-- **Search and filters** by name, store, serial, work and personal.
+- **Resale value**: an estimate of what each item would sell for second-hand today, from its category's
+  resale curve, age, condition and remaining warranty (`src/lib/valuation.ts`). Shown as a likely range,
+  with what it has lost since purchase and what it would likely fetch in a year.
+- **Sell**: suggested asking price, a ready-to-post listing (serial number left out on purpose) to share or
+  copy, and "Mark as sold". Sold items drop out of totals and reminders and move to a Sold filter.
+- **Search and filters** by name, store, serial, work, personal and sold.
 - Light and dark mode, with all data stored on the device.
 
 ## Run it on your iPhone
@@ -42,7 +47,7 @@ left-aligned section headings, horizontal shelves and outlined pill chips. Colou
 
 ```bash
 npm run typecheck   # TypeScript
-npm test            # tax-year, warranty, reminder and price-parsing tests
+npm test            # tax-year, warranty, reminder, valuation, listing and price-parsing tests
 npx expo-doctor     # dependency and config checks
 ```
 
@@ -67,7 +72,7 @@ Built one at a time:
 1. ~~Core inventory, warranties and tax years~~
 2. ~~Warranty expiry notifications~~
 3. Insurance claim pack (PDF export by room or whole home)
-4. Resale listing generator and price tracking
+4. ~~Resale listing generator~~; live marketplace price lookups
 5. Depreciation schedules (ATO effective life, US Section 179 and MACRS) and work-use percentage
 6. Receipt OCR, barcode and serial scanning, and email receipt import
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints

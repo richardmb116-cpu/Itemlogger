@@ -39,6 +39,7 @@ export default function RootLayout() {
             options={{ title: '', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
           />
           <Stack.Screen name="item/edit" options={{ presentation: 'modal', title: 'New item' }} />
+          <Stack.Screen name="item/sell" options={{ presentation: 'modal', title: 'Sell' }} />
         </Stack>
       </ThemeProvider>
     </StoreProvider>

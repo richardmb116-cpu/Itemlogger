@@ -2,6 +2,15 @@ export type TaxRegion = 'AU' | 'US';
 
 export type ItemUse = 'personal' | 'work';
 
+export type Condition = 'like-new' | 'good' | 'fair' | 'worn';
+
+export type Sale = {
+  /** What it actually sold for; null if not recorded. */
+  price: number | null;
+  /** ISO date, yyyy-mm-dd. */
+  date: string;
+};
+
 export type Category =
   | 'electronics'
   | 'appliances'
@@ -26,6 +35,9 @@ export type Item = {
   /** Manufacturer warranty length in months; null when there is none. */
   warrantyMonths: number | null;
   use: ItemUse;
+  condition: Condition;
+  /** Set once the item has been sold; sold items drop out of totals and reminders. */
+  sold: Sale | null;
   notes: string;
   photoUri: string | null;
   receiptUri: string | null;

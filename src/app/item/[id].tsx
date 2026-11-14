@@ -14,13 +14,14 @@ import { toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
 import { useStore } from '@/lib/store';
 import { taxYearFor } from '@/lib/tax';
+import { valueItem } from '@/lib/valuation';
 import { warrantyLengthLabel, warrantyStatus } from '@/lib/warranty';
 
 export default function ItemDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = useColors();
   const insets = useSafeAreaInsets();
-  const { getItem, deleteItem, settings } = useStore();
+  const { getItem, deleteItem, saveItem, settings } = useStore();
   const [viewer, setViewer] = useState<string | null>(null);
   const item = getItem(id);
 
@@ -39,6 +40,9 @@ export default function ItemDetailScreen() {
   const taxYear = taxYearFor(item.purchaseDate, region);
   const nextReminder = settings.remindersEnabled ? planReminders([item], settings.reminderDays)[0] : undefined;
   const edit = () => router.push({ pathname: '/item/edit', params: { id: item.id } });
+  const sell = () => router.push({ pathname: '/item/sell', params: { id: item.id } });
+  const valuation = item.sold ? null : valueItem(item);
+  const undoSold = () => saveItem({ ...item, sold: null, updatedAt: new Date().toISOString() });
 
   const confirmDelete = () => {
     const doDelete = () => {
@@ -84,6 +88,49 @@ export default function ItemDetailScreen() {
           <InfoPill icon="document-text-outline" label={taxYear.label} />
           <InfoPill icon={item.use === 'work' ? 'briefcase-outline' : 'home-outline'} label={item.use === 'work' ? 'Work' : 'Personal'} />
         </View>
+
+        {item.sold ? (
+          <View style={[styles.soldBanner, { backgroundColor: c.greenSoft }]}>
+            <Ionicons name="bag-check" size={20} color={c.green} />
+            <AppText variant="subhead" style={{ flex: 1, fontWeight: '600' }}>
+              Sold{item.sold.price != null ? ` for ${formatMoney(item.sold.price, region)}` : ''} on {formatDate(item.sold.date, region)}
+            </AppText>
+            <AppText variant="subhead" color={c.accent} onPress={undoSold} suppressHighlighting>
+              Undo
+            </AppText>
+          </View>
+        ) : null}
+
+        {/* Resale value */}
+        {valuation ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="See resale estimate"
+            onPress={sell}
+            style={({ pressed }) => [styles.warrantyCard, { backgroundColor: c.card, opacity: pressed ? 0.8 : 1 }]}>
+            <View style={styles.warrantyTop}>
+              <View style={[styles.warrantyIcon, { backgroundColor: c.accentSoft }]}>
+                <Ionicons name="pricetag" size={20} color={c.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="headline">Worth about {formatMoney(valuation.estimate, region)}</AppText>
+                <AppText variant="footnote" color={c.textSecondary}>
+                  Down {Math.round(valuation.lostShare * 100)}% since you bought it · likely{' '}
+                  {formatMoney(valuation.low, region)}–{formatMoney(valuation.high, region)}
+                </AppText>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
+            </View>
+            <View style={[styles.track, { backgroundColor: c.raised }]}>
+              <View
+                style={[
+                  styles.trackFill,
+                  { width: `${Math.round((1 - valuation.lostShare) * 100)}%`, backgroundColor: c.accent },
+                ]}
+              />
+            </View>
+          </Pressable>
+        ) : null}
 
         {/* Warranty */}
         <View style={[styles.warrantyCard, { backgroundColor: c.card }]}>
@@ -151,13 +198,18 @@ export default function ItemDetailScreen() {
         ]}>
         <View style={{ flex: 1 }}>
           <AppText variant="footnote" color={c.textSecondary}>
-            Paid
+            {item.sold ? 'Sold for' : valuation ? `Worth about · paid ${formatMoney(item.price, region)}` : 'Paid'}
           </AppText>
           <AppText variant="title2" style={{ fontVariant: ['tabular-nums'] }}>
-            {formatMoney(item.price, region, { cents: true })}
+            {item.sold
+              ? formatMoney(item.sold.price, region)
+              : valuation
+                ? formatMoney(valuation.estimate, region)
+                : formatMoney(item.price, region, { cents: true })}
           </AppText>
         </View>
-        <PillButton label="Edit item" size="lg" onPress={edit} />
+        <PillButton label="Edit" size="lg" secondary onPress={edit} />
+        {item.sold ? null : <PillButton label="Sell" size="lg" onPress={sell} />}
       </View>
 
       <Modal visible={!!viewer} transparent animationType="fade" onRequestClose={() => setViewer(null)}>
@@ -214,6 +266,16 @@ const styles = StyleSheet.create({
   warrantyIcon: { width: 44, height: 44, borderRadius: 22, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
   track: { height: 6, borderRadius: 3, borderCurve: 'continuous', overflow: 'hidden' },
   trackFill: { height: 6, borderRadius: 3, borderCurve: 'continuous' },
+  soldBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    borderCurve: 'continuous',
+  },
   reminderLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   receipt: { height: 220, width: '100%' },
   bottomBar: {
@@ -223,7 +285,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.lg,
+    gap: Spacing.sm,
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,

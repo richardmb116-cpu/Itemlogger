@@ -13,6 +13,7 @@ import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { sortItems, useStore } from '@/lib/store';
 import type { Category, ItemUse } from '@/lib/types';
 import { useEnableReminders } from '@/lib/use-reminders';
+import { valueItem } from '@/lib/valuation';
 import { warrantyStatus } from '@/lib/warranty';
 
 export default function ItemsScreen() {
@@ -23,25 +24,34 @@ export default function ItemsScreen() {
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | null>(null);
-  const [use, setUse] = useState<ItemUse | null>(null);
+  const [use, setUse] = useState<ItemUse | 'sold' | null>(null);
 
   const sorted = useMemo(() => sortItems(items), [items]);
-  const statuses = useMemo(() => new Map(items.map((i) => [i.id, warrantyStatus(i)])), [items]);
+  // Sold items are kept for records but drop out of totals, warranties and categories.
+  const owned = useMemo(() => sorted.filter((i) => !i.sold), [sorted]);
+  const soldCount = items.length - owned.length;
+  const statuses = useMemo(() => new Map(owned.map((i) => [i.id, warrantyStatus(i)])), [owned]);
+  const values = useMemo(() => new Map(owned.map((i) => [i.id, valueItem(i)?.estimate ?? null])), [owned]);
 
-  const expiring = sorted
+  const expiring = owned
     .filter((i) => statuses.get(i.id)?.state === 'expiring')
     .sort((a, b) => (statuses.get(a.id)?.daysLeft ?? 0) - (statuses.get(b.id)?.daysLeft ?? 0));
-  const covered = items.filter((i) => {
+  const covered = owned.filter((i) => {
     const s = statuses.get(i.id)?.state;
     return s === 'active' || s === 'expiring';
   }).length;
-  const total = items.reduce((sum, i) => sum + (i.price ?? 0), 0);
-  const usedCategories = CATEGORIES.filter((cat) => items.some((i) => i.category === cat.id));
+  const paid = owned.reduce((sum, i) => sum + (i.price ?? 0), 0);
+  const worth = owned.reduce((sum, i) => sum + (values.get(i.id) ?? 0), 0);
+  const usedCategories = CATEGORIES.filter((cat) => owned.some((i) => i.category === cat.id));
 
   const q = query.trim().toLowerCase();
   const visible = sorted.filter((item) => {
     if (category && item.category !== category) return false;
-    if (use && item.use !== use) return false;
+    if (use === 'sold') {
+      if (!item.sold) return false;
+    } else if (item.sold || (use && item.use !== use)) {
+      return false;
+    }
     if (!q) return true;
     return [item.name, item.store, item.serial, categoryInfo(item.category).label, item.notes]
       .join(' ')
@@ -120,16 +130,17 @@ export default function ItemsScreen() {
           {/* Hero banner */}
           <View style={[styles.hero, { backgroundColor: c.card }]}>
             <AppText variant="footnote" color={c.textSecondary} style={{ fontWeight: '600' }}>
-              HOME INVENTORY
+              WORTH TODAY
             </AppText>
-            <AppText style={styles.heroValue}>{formatMoney(total, region, { cents: false })}</AppText>
+            <AppText style={styles.heroValue}>{formatMoney(worth, region, { cents: false })}</AppText>
             <AppText variant="subhead" color={c.textSecondary}>
-              Total value of {items.length} item{items.length === 1 ? '' : 's'}
+              Estimated resale value of {owned.length} item{owned.length === 1 ? '' : 's'} · paid{' '}
+              {formatMoney(paid, region, { cents: false })}
             </AppText>
             <View style={styles.heroStats}>
               <HeroStat icon="shield-checkmark" color={c.green} value={covered} label="Covered" />
               <HeroStat icon="time" color={c.orange} value={expiring.length} label="Expiring" />
-              <HeroStat icon="briefcase" color={c.accent} value={items.filter((i) => i.use === 'work').length} label="Work" />
+              <HeroStat icon="briefcase" color={c.accent} value={owned.filter((i) => i.use === 'work').length} label="Work" />
             </View>
           </View>
 
@@ -192,11 +203,14 @@ export default function ItemsScreen() {
         </>
       ) : null}
 
-      <SectionHeading title={q ? 'Results' : category ? categoryInfo(category).label : 'All items'} />
+      <SectionHeading title={q ? 'Results' : use === 'sold' ? 'Sold' : category ? categoryInfo(category).label : 'All items'} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip label="All" selected={use === null} onPress={() => setUse(null)} />
         <Chip label="Personal" selected={use === 'personal'} onPress={() => setUse('personal')} />
         <Chip label="Work" selected={use === 'work'} onPress={() => setUse('work')} />
+        {soldCount > 0 ? (
+          <Chip label={`Sold (${soldCount})`} selected={use === 'sold'} onPress={() => setUse('sold')} />
+        ) : null}
       </ScrollView>
     </View>
   );
