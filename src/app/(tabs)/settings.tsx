@@ -112,7 +112,7 @@ export default function SettingsScreen() {
             <TextInput
               value={ins.insurer}
               onChangeText={(insurer) => setInsurance({ insurer })}
-              placeholder="e.g. NRMA"
+              placeholder={settings.taxRegion === 'US' ? 'e.g. State Farm' : 'e.g. NRMA'}
               placeholderTextColor={c.textTertiary}
               style={inputStyle}
               accessibilityLabel="Insurer"
