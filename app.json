@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Keep Track",
-    "slug": "keep-track",
+    "name": "Vestle",
+    "slug": "vestle",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "keeptrack",
+    "scheme": "vestle",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.keeptrack.app",
+      "bundleIdentifier": "com.vestle.app",
       "supportsTablet": false
     },
     "android": {
@@ -38,8 +38,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Keep Track uses the camera to photograph your items, receipts and serial numbers.",
-          "photosPermission": "Keep Track lets you attach photos of items and receipts from your library.",
+          "cameraPermission": "Vestle uses the camera to photograph your items, receipts and serial numbers.",
+          "photosPermission": "Vestle lets you attach photos of items and receipts from your library.",
           "microphonePermission": false
         }
       ],

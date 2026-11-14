@@ -183,7 +183,7 @@ export function accountantHtml(
     ${table}
   </table>
   <footer>
-    Prepared with Keep Track from the owner's records. Deductions are estimates using common
+    Prepared with Vestle from the owner's records. Deductions are estimates using common
     ${region === 'AU' ? 'ATO' : 'IRS'} methods and the work-use share shown; please confirm before lodging.
   </footer>
   ${receiptPages ? `<section class="receipts">${receiptPages}</section>` : ''}

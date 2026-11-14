@@ -76,7 +76,7 @@ export default function SettingsScreen() {
   const reminderFooter = !remindersSupported
     ? 'Warranty reminders work in the iPhone app, not in the browser preview.'
     : blocked
-      ? 'Notifications are turned off for Keep Track in iOS Settings.'
+      ? 'Notifications are turned off for Vestle in iOS Settings.'
       : on
         ? `Reminders arrive at ${hour}. ${scheduled} coming up.`
         : 'Get a notification before a warranty runs out, while there is still time to claim.';
@@ -84,7 +84,7 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
-        <ScreenTitle eyebrow="Keep Track" title="Settings" />
+        <ScreenTitle eyebrow="Vestle" title="Settings" />
 
         <Section
           title="Country"

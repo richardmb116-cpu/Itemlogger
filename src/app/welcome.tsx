@@ -26,7 +26,7 @@ import type { TaxRegion } from '@/lib/types';
 const PAGES = [
   {
     photo: WELCOME_PHOTOS.home,
-    eyebrow: 'Keep Track',
+    eyebrow: 'Vestle',
     title: 'Track your\nkeeps.',
     body: 'Everything you own, with its warranty, receipt and value, kept beautifully in one place.',
   },

@@ -234,7 +234,7 @@ export function buildClaimHtml(
   <section class="items">${itemHtml}</section>
 
   <footer>
-    Prepared with Keep Track from the owner's own records. Prices paid are as recorded by the owner; current values are
+    Prepared with Vestle from the owner's own records. Prices paid are as recorded by the owner; current values are
     estimates from typical resale prices unless marked as checked against real listings.
   </footer>
 </body></html>`;

@@ -60,7 +60,7 @@ const toApp = (p) => p.replace(/^_expo\//, 'app/');
 const scripts = [...html.matchAll(/<script src="\/([^"]+)" defer><\/script>/g)].map((m) => toApp(m[1]));
 const styles = [...html.matchAll(/<link rel="stylesheet" href="\/([^"]+)">/g)].map((m) => toApp(m[1]));
 
-const page = `<title>Keep Track</title>
+const page = `<title>Vestle</title>
 <meta name="description" content="Home inventory and warranty vault: web preview of the iPhone app.">
 <style>
   :root { --bg: #ffffff; color-scheme: light; }
