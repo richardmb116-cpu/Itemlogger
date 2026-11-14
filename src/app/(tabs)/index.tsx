@@ -5,17 +5,20 @@ import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemCard, ItemRow } from '@/components/item-bits';
-import { AppText, Chip, IconButton, PrimaryButton, SectionHeading, tap } from '@/components/ui';
+import { AppText, Chip, IconButton, PillButton, PrimaryButton, SectionHeading, tap } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { CATEGORIES, categoryInfo } from '@/lib/categories';
 import { formatMoney } from '@/lib/format';
+import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { sortItems, useStore } from '@/lib/store';
 import type { Category, ItemUse } from '@/lib/types';
+import { useEnableReminders } from '@/lib/use-reminders';
 import { warrantyStatus } from '@/lib/warranty';
 
 export default function ItemsScreen() {
   const c = useColors();
-  const { items, settings } = useStore();
+  const { items, settings, updateSettings } = useStore();
+  const enableReminders = useEnableReminders();
   const region = settings.taxRegion;
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
@@ -47,6 +50,10 @@ export default function ItemsScreen() {
   });
 
   const addItem = () => router.push('/item/edit');
+  const showReminderPrompt = !settings.remindersEnabled && !settings.remindersPromptDismissed && covered > 0;
+  const turnOnReminders = async () => {
+    if (!(await enableReminders())) explainBlockedNotifications();
+  };
   const open = (id: string) => router.push(`/item/${id}`);
   const browsing = !q;
 
@@ -125,6 +132,30 @@ export default function ItemsScreen() {
               <HeroStat icon="briefcase" color={c.accent} value={items.filter((i) => i.use === 'work').length} label="Work" />
             </View>
           </View>
+
+          {showReminderPrompt ? (
+            <View style={[styles.prompt, { backgroundColor: c.accentSoft }]}>
+              <View style={[styles.promptIcon, { backgroundColor: c.accent }]}>
+                <Ionicons name="notifications" size={20} color={c.onAccent} />
+              </View>
+              <View style={{ flex: 1, gap: 2 }}>
+                <AppText variant="headline">Never miss a warranty</AppText>
+                <AppText variant="footnote" color={c.textSecondary}>
+                  Get a reminder 30 days and 1 week before one runs out.
+                </AppText>
+                <View style={styles.promptActions}>
+                  <PillButton label="Turn on" onPress={turnOnReminders} />
+                  <AppText
+                    variant="footnote"
+                    color={c.textSecondary}
+                    onPress={() => updateSettings({ remindersPromptDismissed: true })}
+                    suppressHighlighting>
+                    Not now
+                  </AppText>
+                </View>
+              </View>
+            </View>
+          ) : null}
 
           {/* Browse by category */}
           <SectionHeading title="Browse by category" />
@@ -282,6 +313,18 @@ const styles = StyleSheet.create({
   heroValue: { fontSize: 40, fontWeight: '700', letterSpacing: -1, fontVariant: ['tabular-nums'], marginTop: 2 },
   heroStats: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg },
   heroStat: { flex: 1, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.md, gap: 2 },
+  prompt: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginTop: -Spacing.lg,
+    marginBottom: Spacing.xxl,
+    padding: Spacing.lg,
+    borderRadius: Radius.xl,
+    borderCurve: 'continuous',
+  },
+  promptIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  promptActions: { flexDirection: 'row', alignItems: 'center', gap: Spacing.lg, marginTop: Spacing.sm },
   categories: { gap: Spacing.lg, paddingHorizontal: Spacing.xl, marginBottom: Spacing.xxl },
   bubbleWrap: { alignItems: 'center', gap: 6, width: 68 },
   bubble: { width: 64, height: 64, borderRadius: 32, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },

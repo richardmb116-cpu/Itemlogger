@@ -4,6 +4,12 @@ import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { StoreProvider } from '@/lib/store';
+import { useReminderSync } from '@/lib/use-reminders';
+
+function ReminderSync() {
+  useReminderSync();
+  return null;
+}
 
 export default function RootLayout() {
   const scheme = useColorScheme();
@@ -19,6 +25,7 @@ export default function RootLayout() {
     <StoreProvider>
       <ThemeProvider value={theme}>
         <StatusBar style="auto" />
+        <ReminderSync />
         <Stack
           screenOptions={{
             headerTintColor: c.accent,

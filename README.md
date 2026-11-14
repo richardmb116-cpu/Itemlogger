@@ -6,7 +6,9 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 ## What's in it today
 
 - **Items**: photo, receipt photo, price, purchase date, store, serial number, category, notes.
-- **Warranty tracking**: each item shows time left, with an "expiring soon" banner and filter (60 days).
+- **Warranty tracking**: each item shows time left, with an "Expiring soon" shelf on the home screen.
+- **Warranty reminders**: notifications at 9 am, 30 days and 1 week before a warranty ends (or on the day,
+  your choice in Settings). Tapping one opens the item, showing its receipt and serial number.
 - **Tax**: switch between the Australian financial year (1 Jul – 30 Jun) and the US calendar year, and
   see work and personal purchase totals for each year.
 - **Search and filters** by name, store, serial, work and personal.
@@ -39,7 +41,7 @@ left-aligned section headings, horizontal shelves and outlined pill chips. Colou
 
 ```bash
 npm run typecheck   # TypeScript
-npm test            # tax-year, warranty and price-parsing tests
+npm test            # tax-year, warranty, reminder and price-parsing tests
 npx expo-doctor     # dependency and config checks
 ```
 
@@ -62,7 +64,7 @@ tests/                unit tests for src/lib
 Built one at a time:
 
 1. ~~Core inventory, warranties and tax years~~
-2. Warranty expiry notifications
+2. ~~Warranty expiry notifications~~
 3. Insurance claim pack (PDF export by room or whole home)
 4. Resale listing generator and price tracking
 5. Depreciation schedules (ATO effective life, US Section 179 and MACRS) and work-use percentage

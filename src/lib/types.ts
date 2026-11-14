@@ -35,4 +35,10 @@ export type Item = {
 
 export type Settings = {
   taxRegion: TaxRegion;
+  /** Warranty expiry notifications switched on by the user. */
+  remindersEnabled: boolean;
+  /** Days before expiry to remind; 0 = on the day. */
+  reminderDays: number[];
+  /** The "turn on reminders" card on the Items screen was dismissed. */
+  remindersPromptDismissed: boolean;
 };

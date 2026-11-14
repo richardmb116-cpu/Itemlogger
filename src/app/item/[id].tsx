@@ -10,6 +10,8 @@ import { AppText, PillButton, Row, Section } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { categoryInfo } from '@/lib/categories';
 import { formatDate, formatMoney } from '@/lib/format';
+import { toISODate } from '@/lib/dates';
+import { planReminders } from '@/lib/reminder-plan';
 import { useStore } from '@/lib/store';
 import { taxYearFor } from '@/lib/tax';
 import { warrantyLengthLabel, warrantyStatus } from '@/lib/warranty';
@@ -35,6 +37,7 @@ export default function ItemDetailScreen() {
   const status = warrantyStatus(item);
   const col = warrantyColors(status.state, c);
   const taxYear = taxYearFor(item.purchaseDate, region);
+  const nextReminder = settings.remindersEnabled ? planReminders([item], settings.reminderDays)[0] : undefined;
   const edit = () => router.push({ pathname: '/item/edit', params: { id: item.id } });
 
   const confirmDelete = () => {
@@ -102,6 +105,14 @@ export default function ItemDetailScreen() {
           {status.expires ? (
             <View style={[styles.track, { backgroundColor: c.raised }]}>
               <View style={[styles.trackFill, { width: `${Math.round(status.progress * 100)}%`, backgroundColor: col.fg }]} />
+            </View>
+          ) : null}
+          {nextReminder ? (
+            <View style={styles.reminderLine}>
+              <Ionicons name="notifications" size={14} color={c.accent} />
+              <AppText variant="footnote" color={c.textSecondary}>
+                Next reminder {formatDate(toISODate(nextReminder.date), region)}
+              </AppText>
             </View>
           ) : null}
         </View>
@@ -205,6 +216,7 @@ const styles = StyleSheet.create({
   warrantyIcon: { width: 44, height: 44, borderRadius: 22, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center' },
   track: { height: 6, borderRadius: 3, borderCurve: 'continuous', overflow: 'hidden' },
   trackFill: { height: 6, borderRadius: 3, borderCurve: 'continuous' },
+  reminderLine: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   receipt: { height: 220, width: '100%' },
   bottomBar: {
     position: 'absolute',

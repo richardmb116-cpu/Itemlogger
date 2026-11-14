@@ -2,13 +2,19 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 
 import { addMonths, toISODate } from './dates';
 import { deleteImage } from './images';
+import { DEFAULT_REMINDER_DAYS } from './reminder-plan';
 import { kv } from './storage';
 import type { Item, Settings } from './types';
 
 const ITEMS_KEY = 'items.v1';
 const SETTINGS_KEY = 'settings.v1';
 
-const DEFAULT_SETTINGS: Settings = { taxRegion: 'AU' };
+const DEFAULT_SETTINGS: Settings = {
+  taxRegion: 'AU',
+  remindersEnabled: false,
+  reminderDays: DEFAULT_REMINDER_DAYS,
+  remindersPromptDismissed: false,
+};
 
 type Store = {
   items: Item[];
