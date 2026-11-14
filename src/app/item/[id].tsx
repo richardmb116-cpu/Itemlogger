@@ -13,7 +13,8 @@ import { formatDate, formatMoney } from '@/lib/format';
 import { toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
 import { useStore } from '@/lib/store';
-import { depreciationSchedule } from '@/lib/depreciation';
+import { deductionFor, depreciationSchedule } from '@/lib/depreciation';
+import { todayISO } from '@/lib/dates';
 import { taxYearByEnd, taxYearFor } from '@/lib/tax';
 import { checkedAgo, currentValue } from '@/lib/valuation';
 import { warrantyLengthLabel, warrantyStatus } from '@/lib/warranty';
@@ -48,6 +49,12 @@ export default function ItemDetailScreen() {
   const schedule = item.use === 'work' ? depreciationSchedule(item, region, settings.depreciation) : null;
   const shownYears = schedule?.years.slice(0, 6) ?? [];
   const laterTotal = (schedule?.years.slice(6) ?? []).reduce((sum, y) => sum + y.deduction, 0);
+  const advanced = settings.depreciation.showAdvanced;
+  // Simple view: one estimate for this tax year (or the item's first year, if that's still ahead).
+  const thisTaxYear = taxYearFor(todayISO(), region).endYear;
+  const estimateYear =
+    schedule?.years[0] && schedule.years[0].endYear > thisTaxYear ? schedule.years[0].endYear : thisTaxYear;
+  const estimate = schedule ? deductionFor(schedule, estimateYear) : 0;
   const undoSold = () => saveItem({ ...item, sold: null, updatedAt: new Date().toISOString() });
 
   const confirmDelete = () => {
@@ -169,7 +176,38 @@ export default function ItemDetailScreen() {
           ) : null}
         </View>
 
-        {schedule ? (
+        {schedule && !advanced ? (
+          <Section
+            title="Tax"
+            footer={[
+              schedule.eligible
+                ? `An estimate for the ${item.workPercent}% work share. Your accountant confirms the final figure.`
+                : null,
+              schedule.note,
+            ]
+              .filter(Boolean)
+              .join(' ')}>
+            {schedule.eligible ? (
+              <>
+                <Row
+                  label={`Est. deduction, ${taxYearByEnd(estimateYear, region).label}`}
+                  value={formatMoney(estimate, region, { cents: true })}
+                />
+                <Row
+                  label="For your accountant"
+                  icon="paper-plane-outline"
+                  chevron
+                  last
+                  onPress={() => router.push({ pathname: '/accountant', params: { year: String(estimateYear) } })}
+                />
+              </>
+            ) : (
+              <Row label="Not claimable" value="" last />
+            )}
+          </Section>
+        ) : null}
+
+        {schedule && advanced ? (
           <Section
             title="Tax deductions"
             footer={[

@@ -5,7 +5,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemThumb } from '@/components/item-bits';
-import { AppText, Chip, Row, ScreenTitle, Section, Segmented } from '@/components/ui';
+import { AppText, Chip, PrimaryButton, Row, ScreenTitle, Section, Segmented } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { todayISO } from '@/lib/dates';
 import { deductionFor, depreciationSchedule, type Schedule } from '@/lib/depreciation';
@@ -60,12 +60,17 @@ export default function TaxScreen() {
   const boughtForWork = sorted.filter((i) => i.use === 'work' && taxYearFor(i.purchaseDate, region).endYear === endYear);
   const workSpend = boughtForWork.reduce((s, i) => s + (i.price ?? 0), 0);
   const future = endYear > currentYear;
+  const advanced = settings.depreciation.showAdvanced;
 
   const changeRegion = (r: TaxRegion) => {
     setPicked(null);
     updateSettings({ taxRegion: r });
   };
 
+  const simpleNote =
+    region === 'AU'
+      ? 'Australia: 1 July to 30 June. Estimates using common ATO methods, for the work share only. Your accountant confirms the final figures.'
+      : "United States: calendar year. For business or self-employed use; employees generally can't deduct work purchases. Your accountant confirms the final figures.";
   const methodNote =
     region === 'AU'
       ? `Australia: 1 July to 30 June. Items $300 or less are claimed straight away; others are spread over their effective life using ${
@@ -102,7 +107,7 @@ export default function TaxScreen() {
             <View style={styles.cardLabel}>
               <Ionicons name="receipt" size={16} color={c.onAccent} />
               <AppText variant="subhead" color={c.onAccent} style={{ fontWeight: '600' }}>
-                Deductions{future ? ' (projected)' : ''}
+                Estimated deductions{future ? ' (projected)' : ''}
               </AppText>
             </View>
             <AppText variant="largeTitle" color={c.onAccent} style={{ fontVariant: ['tabular-nums'] }}>
@@ -125,7 +130,7 @@ export default function TaxScreen() {
           </View>
         </View>
 
-        <Section title={`Deductions in ${year.label}`} footer={methodNote}>
+        <Section title={`Deductions in ${year.label}`} footer={advanced ? methodNote : simpleNote}>
           {claims.length === 0 ? (
             <Row label="Nothing to claim this year" last />
           ) : (
@@ -141,7 +146,8 @@ export default function TaxScreen() {
                   <View style={{ flex: 1 }}>
                     <AppText numberOfLines={1}>{item.name}</AppText>
                     <AppText variant="footnote" color={c.textSecondary} numberOfLines={1}>
-                      {schedule.method} · {item.workPercent}% work
+                      {advanced ? `${schedule.method} · ` : ''}
+                      {item.workPercent}% work{item.receiptUri ? '' : ' · no receipt'}
                     </AppText>
                   </View>
                   <AppText style={{ fontVariant: ['tabular-nums'], fontWeight: '600' }}>
@@ -168,9 +174,22 @@ export default function TaxScreen() {
           </Section>
         ) : null}
 
-        <Section>
-          <Row label="Depreciation method" icon="options-outline" chevron last onPress={() => router.push('/settings')} />
-        </Section>
+        <View style={styles.export}>
+          <PrimaryButton
+            label="Send to my accountant"
+            icon="paper-plane"
+            onPress={() => router.push({ pathname: '/accountant', params: { year: String(endYear) } })}
+          />
+          <AppText variant="footnote" color={c.textSecondary} style={{ textAlign: 'center' }}>
+            A PDF with receipts, or a spreadsheet, of this year's work items.
+          </AppText>
+        </View>
+
+        {advanced ? (
+          <Section>
+            <Row label="Depreciation method" icon="options-outline" chevron last onPress={() => router.push('/settings')} />
+          </Section>
+        ) : null}
 
         <AppText variant="footnote" color={c.textTertiary} style={styles.disclaimer}>
           A record-keeping aid, not tax advice. Check with your accountant before claiming.
@@ -187,5 +206,6 @@ const styles = StyleSheet.create({
   smallCard: { flex: 1, borderRadius: Radius.lg, borderCurve: 'continuous', padding: Spacing.lg, gap: 4, justifyContent: 'flex-end' },
   cardLabel: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   claimRow: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  export: { gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xl },
   disclaimer: { textAlign: 'center', paddingHorizontal: Spacing.xxl },
 });

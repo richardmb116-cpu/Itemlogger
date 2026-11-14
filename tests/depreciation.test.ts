@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { deductionFor, depreciationSchedule, suggestedLife } from '../src/lib/depreciation';
 import type { DepreciationSettings, Item } from '../src/lib/types';
 
-const au: DepreciationSettings = { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179' };
+const au: DepreciationSettings = { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false };
 
 function item(over: Partial<Item>): Item {
   return {

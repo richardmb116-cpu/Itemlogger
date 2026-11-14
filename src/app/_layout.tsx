@@ -41,6 +41,7 @@ export default function RootLayout() {
           <Stack.Screen name="item/edit" options={{ presentation: 'modal', title: 'New item' }} />
           <Stack.Screen name="item/sell" options={{ presentation: 'modal', title: 'Sell' }} />
           <Stack.Screen name="claim" options={{ presentation: 'modal', title: 'Claim pack' }} />
+          <Stack.Screen name="accountant" options={{ presentation: 'modal', title: 'For your accountant' }} />
         </Stack>
       </ThemeProvider>
     </StoreProvider>

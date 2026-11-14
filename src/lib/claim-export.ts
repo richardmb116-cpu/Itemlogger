@@ -56,3 +56,21 @@ export async function exportPdf(html: string, paper: { width: number; height: nu
 
   await Sharing.shareAsync(shareUri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: fileName });
 }
+
+/** Save text (e.g. a CSV) to a named file and open the share sheet. */
+export async function shareTextFile(fileName: string, text: string, mimeType: string, uti: string): Promise<void> {
+  const dir = new Directory(Paths.cache, 'exports');
+  if (!dir.exists) dir.create({ intermediates: true });
+  const file = new File(dir, fileName);
+  if (file.exists) file.delete();
+  file.create();
+  file.write(text);
+  await Sharing.shareAsync(file.uri, { mimeType, UTI: uti, dialogTitle: fileName });
+}
+
+/** Resize just the receipts, for the accountant's PDF. */
+export async function prepareReceipts(items: Item[]): Promise<Record<string, string | undefined>> {
+  const out: Record<string, string | undefined> = {};
+  for (const item of items) if (item.receiptUri) out[item.id] = await embed(item.receiptUri);
+  return out;
+}

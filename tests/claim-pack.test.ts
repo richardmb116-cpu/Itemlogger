@@ -17,7 +17,7 @@ function item(over: Partial<Item>): Item {
 
 const settings: Settings = {
   taxRegion: 'AU',
-  depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179' },
+  depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
   insurance: { insurer: 'Acme Insurance', policyNumber: 'HC-123', sumInsured: 2500 },
   remindersEnabled: false,
   reminderDays: [30, 7],

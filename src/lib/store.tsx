@@ -11,7 +11,7 @@ const SETTINGS_KEY = 'settings.v1';
 
 const DEFAULT_SETTINGS: Settings = {
   taxRegion: 'AU',
-  depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179' },
+  depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
   insurance: { insurer: '', policyNumber: '', sumInsured: null },
   remindersEnabled: false,
   reminderDays: DEFAULT_REMINDER_DAYS,
@@ -59,7 +59,15 @@ function normalize(item: Partial<Item> & Pick<Item, 'id'>): Item {
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Item[]>(() => load<Item[]>(ITEMS_KEY, []).map(normalize));
-  const [settings, setSettings] = useState<Settings>(() => ({ ...DEFAULT_SETTINGS, ...load(SETTINGS_KEY, {}) }));
+  const [settings, setSettings] = useState<Settings>(() => {
+    const saved = load<Partial<Settings>>(SETTINGS_KEY, {});
+    return {
+      ...DEFAULT_SETTINGS,
+      ...saved,
+      depreciation: { ...DEFAULT_SETTINGS.depreciation, ...saved.depreciation },
+      insurance: { ...DEFAULT_SETTINGS.insurance, ...saved.insurance },
+    };
+  });
 
   const writeItems = useCallback((updater: (prev: Item[]) => Item[]) => {
     setItems((prev) => {

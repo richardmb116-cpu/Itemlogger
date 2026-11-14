@@ -75,6 +75,8 @@ export type DepreciationSettings = {
   /** Pool items under $1,000 (ATO low-value pool). */
   auLowValuePool: boolean;
   usMethod: UsMethod;
+  /** Show methods, effective lives and year-by-year schedules (for people who want the detail). */
+  showAdvanced: boolean;
 };
 
 export type Settings = {

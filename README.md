@@ -10,8 +10,10 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 - **Warranty reminders**: notifications at 9 am, 30 days and 1 week before a warranty ends (or on the day,
   your choice in Settings). Tapping one opens the item, showing its receipt and serial number.
 - **Tax**: switch between the Australian financial year (1 Jul – 30 Jun) and the US calendar year. Each
-  year shows the depreciation deductions for work items, including ones bought in earlier years
-  (`src/lib/depreciation.ts`):
+  year shows one estimated deduction per work item (work-use % only), including items bought in earlier
+  years, and **Send to my accountant** shares a PDF with receipts attached or a CSV spreadsheet
+  (`src/lib/accountant-export.ts`). Methods, effective lives and year-by-year schedules stay hidden unless
+  **Accountant details** is switched on in Settings. Under the hood (`src/lib/depreciation.ts`):
   - Australia: $300 or less claimed straight away; otherwise diminishing value or prime cost over the
     effective life (suggested from the item, editable), first year pro-rated by days held; optional
     low-value pool for items under $1,000
@@ -62,7 +64,7 @@ left-aligned section headings, horizontal shelves and outlined pill chips. Colou
 
 ```bash
 npm run typecheck   # TypeScript
-npm test            # tax-year, depreciation, warranty, reminder, valuation, listing, claim-pack and price tests
+npm test            # tax, depreciation, accountant export, warranty, reminder, valuation, listing, claim-pack tests
 npx expo-doctor     # dependency and config checks
 ```
 
@@ -89,8 +91,7 @@ Built one at a time:
 3. ~~Insurance claim pack~~ (rooms/locations to filter by room are in item 8)
 4. ~~Resale listing generator~~, ~~manual price checks~~; automatic eBay price lookups via a small cached
    server (stage 2) and opt-in shared sale prices (stage 3)
-5. ~~Depreciation schedules (ATO effective life, US Section 179 and MACRS) and work-use percentage~~;
-   accountant export (CSV) is a natural next step
+5. ~~Depreciation estimates, work-use percentage and accountant export~~
 6. Receipt OCR, barcode and serial scanning, and email receipt import
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
 8. Rooms and locations, move mode, lending tracker, maintenance reminders

@@ -18,3 +18,11 @@ export async function prepareImages(items: Item[], options: ClaimOptions): Promi
 export async function exportPdf(): Promise<void> {
   throw new Error('PDF export works in the iPhone app.');
 }
+
+export async function shareTextFile(): Promise<void> {
+  throw new Error('Exporting files works in the iPhone app.');
+}
+
+export async function prepareReceipts(items: Item[]): Promise<Record<string, string | undefined>> {
+  return Object.fromEntries(items.map((i) => [i.id, i.receiptUri ?? undefined]));
+}

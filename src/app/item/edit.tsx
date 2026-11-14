@@ -206,7 +206,9 @@ export default function EditItemScreen() {
           footer={
             use === 'work'
               ? `Counts toward ${taxYearFor(purchaseDate, region).label}. Only the work share is claimed.${
-                  region === 'AU' ? " Leave effective life blank to use the suggestion, or check the ATO's effective life table." : ''
+                  region === 'AU' && settings.depreciation.showAdvanced
+                    ? " Leave effective life blank to use the suggestion, or check the ATO's effective life table."
+                    : ''
                 }`
               : `Counts toward ${taxYearFor(purchaseDate, region).label}. Work items appear in your tax summary.`
           }>
@@ -240,7 +242,7 @@ export default function EditItemScreen() {
                   <Chip key={p} label={`${p}%`} selected={clampPercent(workPercent) === p} onPress={() => setWorkPercent(String(p))} />
                 ))}
               </View>
-              {region === 'AU' ? (
+              {region === 'AU' && settings.depreciation.showAdvanced ? (
                 <Field
                   label="Effective life"
                   value={lifeYears}

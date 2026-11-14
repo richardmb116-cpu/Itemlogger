@@ -148,8 +148,16 @@ export default function SettingsScreen() {
           title="Tax region"
           footer={
             settings.taxRegion === 'AU'
-              ? 'Australian financial year (1 July – 30 June), amounts in AUD. Diminishing value claims more in the early years; prime cost spreads it evenly. The low-value pool groups items under $1,000. Pick what your accountant uses.'
-              : 'US tax year (calendar year), amounts in USD. Section 179 deducts the business share in the first year; MACRS spreads it over 5 or 7 years. Pick what your accountant uses.'
+              ? `Australian financial year (1 July – 30 June), amounts in AUD. ${
+                  dep.showAdvanced
+                    ? 'Diminishing value claims more in the early years; prime cost spreads it evenly. The low-value pool groups items under $1,000. Pick what your accountant uses.'
+                    : 'Turn on accountant details to choose the depreciation method and see year-by-year schedules.'
+                }`
+              : `US tax year (calendar year), amounts in USD. ${
+                  dep.showAdvanced
+                    ? 'Section 179 deducts the business share in the first year; MACRS spreads it over 5 or 7 years. Pick what your accountant uses.'
+                    : 'Turn on accountant details to choose the depreciation method and see year-by-year schedules.'
+                }`
           }>
           <View style={{ padding: Spacing.md }}>
             <Segmented
@@ -162,39 +170,51 @@ export default function SettingsScreen() {
             />
           </View>
           <Row label="Currency" value={currencyFor(settings.taxRegion).code} />
+          <Row label="Accountant details" last={!dep.showAdvanced}>
+            <Switch
+              value={dep.showAdvanced}
+              onValueChange={(showAdvanced) => setDep({ showAdvanced })}
+              trackColor={{ true: c.green, false: c.fill }}
+              accessibilityLabel="Accountant details"
+            />
+          </Row>
+          {dep.showAdvanced ? (
+            <>
           <View style={{ padding: Spacing.md, gap: Spacing.sm }}>
-            <AppText variant="footnote" color={c.textSecondary}>
-              Depreciation method
-            </AppText>
+              <AppText variant="footnote" color={c.textSecondary}>
+                Depreciation method
+              </AppText>
+              {settings.taxRegion === 'AU' ? (
+                <Segmented
+                  value={dep.auMethod}
+                  onChange={(auMethod) => setDep({ auMethod })}
+                  options={[
+                    { value: 'diminishing', label: 'Diminishing value' },
+                    { value: 'prime', label: 'Prime cost' },
+                  ]}
+                />
+              ) : (
+                <Segmented
+                  value={dep.usMethod}
+                  onChange={(usMethod) => setDep({ usMethod })}
+                  options={[
+                    { value: 'section179', label: 'Section 179' },
+                    { value: 'macrs', label: 'MACRS' },
+                  ]}
+                />
+              )}
+            </View>
             {settings.taxRegion === 'AU' ? (
-              <Segmented
-                value={dep.auMethod}
-                onChange={(auMethod) => setDep({ auMethod })}
-                options={[
-                  { value: 'diminishing', label: 'Diminishing value' },
-                  { value: 'prime', label: 'Prime cost' },
-                ]}
-              />
-            ) : (
-              <Segmented
-                value={dep.usMethod}
-                onChange={(usMethod) => setDep({ usMethod })}
-                options={[
-                  { value: 'section179', label: 'Section 179' },
-                  { value: 'macrs', label: 'MACRS' },
-                ]}
-              />
-            )}
-          </View>
-          {settings.taxRegion === 'AU' ? (
-            <Row label="Low-value pool" last>
-              <Switch
-                value={dep.auLowValuePool}
-                onValueChange={(auLowValuePool) => setDep({ auLowValuePool })}
-                trackColor={{ true: c.green, false: c.fill }}
-                accessibilityLabel="Low-value pool"
-              />
-            </Row>
+              <Row label="Low-value pool" last>
+                <Switch
+                  value={dep.auLowValuePool}
+                  onValueChange={(auLowValuePool) => setDep({ auLowValuePool })}
+                  trackColor={{ true: c.green, false: c.fill }}
+                  accessibilityLabel="Low-value pool"
+                />
+              </Row>
+            ) : null}
+            </>
           ) : null}
         </Section>
 
