@@ -10,7 +10,7 @@ export function explainBlockedNotifications() {
   }
   Alert.alert(
     'Notifications are off',
-    'To get warranty reminders, allow notifications for Itemlogger in the Settings app.',
+    'To get warranty reminders, allow notifications for Keep Track in the Settings app.',
     [
       { text: 'Not now', style: 'cancel' },
       { text: 'Open Settings', onPress: openSystemSettings },

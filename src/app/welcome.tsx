@@ -26,9 +26,9 @@ import type { TaxRegion } from '@/lib/types';
 const PAGES = [
   {
     photo: WELCOME_PHOTOS.home,
-    eyebrow: 'Itemlogger',
-    title: 'Everything you own.\nAccounted for.',
-    body: 'Your home inventory, warranty vault and receipt drawer, kept beautifully in one place.',
+    eyebrow: 'Keep Track',
+    title: 'Track your\nkeeps.',
+    body: 'Everything you own, with its warranty, receipt and value, kept beautifully in one place.',
   },
   {
     photo: WELCOME_PHOTOS.warranty,

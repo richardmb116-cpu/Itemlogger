@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Itemlogger",
-    "slug": "itemlogger",
+    "name": "Keep Track",
+    "slug": "keep-track",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "itemlogger",
+    "scheme": "keeptrack",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.itemlogger.app",
+      "bundleIdentifier": "com.keeptrack.app",
       "supportsTablet": false
     },
     "android": {
@@ -38,8 +38,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Itemlogger uses the camera to photograph your items, receipts and serial numbers.",
-          "photosPermission": "Itemlogger lets you attach photos of items and receipts from your library.",
+          "cameraPermission": "Keep Track uses the camera to photograph your items, receipts and serial numbers.",
+          "photosPermission": "Keep Track lets you attach photos of items and receipts from your library.",
           "microphonePermission": false
         }
       ],

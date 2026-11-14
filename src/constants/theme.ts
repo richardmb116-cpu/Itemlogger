@@ -1,7 +1,7 @@
 import { useColorScheme } from 'react-native';
 
 /**
- * Itemlogger design language: "gallery white".
+ * Keep Track design language: "gallery white".
  * Monochrome first, like a premium showroom: pure white pages, warm-grey surfaces, ink-black
  * pill buttons, and photography doing the talking. One cobalt accent for links and selection.
  * Dark mode is the same idea inverted: black pages, graphite surfaces, white buttons.

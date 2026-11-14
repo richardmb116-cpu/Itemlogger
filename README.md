@@ -1,6 +1,8 @@
-# Itemlogger
+# Keep Track
 
-Home inventory and warranty vault for iPhone. Snap an item and its receipt, and Itemlogger keeps track of
+*Track your keeps.*
+
+Home inventory and warranty vault for iPhone. Snap an item and its receipt, and Keep Track keeps track of
 warranties, serial numbers and which tax year each purchase falls in (Australian or US).
 
 ## What's in it today
