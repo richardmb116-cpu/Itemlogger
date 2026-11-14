@@ -58,7 +58,7 @@ export default function ItemsScreen() {
   const workCount = owned.filter((i) => i.use === 'work').length;
   const birthdays = upcomingBirthdays(owned, 7);
   const readyToSell = owned
-    .map((item) => ({ item, plan: sellPlan(item, region) }))
+    .map((item) => ({ item, plan: sellPlan(item, region, settings.upgradeStyle) }))
     .filter((r): r is { item: (typeof owned)[number]; plan: NonNullable<ReturnType<typeof sellPlan>> } =>
       !!r.plan && (r.plan.status === 'window' || r.plan.status === 'late'),
     );

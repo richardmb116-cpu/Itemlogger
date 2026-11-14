@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 
 import { buildListing } from '../src/lib/listing';
 import type { Item } from '../src/lib/types';
-import { curveAt, formatAge, roundPrice, valueItem } from '../src/lib/valuation';
+import { fractionAt, profileFor } from '../src/lib/lifecycle';
+import { formatAge, roundPrice, valueAt, valueItem } from '../src/lib/valuation';
 
 const today = new Date(2026, 10, 14);
 
@@ -16,16 +17,33 @@ function item(over: Partial<Item>): Item {
   };
 }
 
-test('curve: first drop, then compounding yearly loss, never below the floor', () => {
-  assert.equal(curveAt('electronics', 0), 0.8);
-  assert.ok(Math.abs(curveAt('electronics', 1) - 0.8 * 0.78) < 1e-9);
-  assert.equal(curveAt('electronics', 30), 0.08);
-  assert.equal(curveAt('jewellery', 50), 0.4);
+test('curve: day-one drop, a year-one value, compounding loss, and a floor that holds', () => {
+  const p = profileFor(item({}));
+  assert.ok(fractionAt(p, 0) < 1 && fractionAt(p, 0) > p.v12);
+  assert.ok(Math.abs(fractionAt(p, 1) - p.v12) < 1e-9);
+  assert.ok(Math.abs(fractionAt(p, 2) - p.v12 * (1 - p.perYear)) < 1e-9);
+  // Headphones and lenses keep their floor; the old model sent them to 3–6% of price.
+  const phones = profileFor(item({ name: 'Sony WH-1000XM6' }));
+  assert.ok(fractionAt(phones, 4.5) >= phones.floor);
+  const lens = profileFor(item({ name: 'Sony 24-70mm f/2.8 GM lens' }));
+  assert.equal(lens.id, 'lens');
+  assert.ok(fractionAt(lens, 10) > 0.55);
+});
+
+test('special cases: market-priced, no resale market, and brand premiums', () => {
+  const rolex = item({ name: 'Rolex Submariner', category: 'jewellery', price: 10000 });
+  assert.equal(profileFor(rolex).market, true);
+  assert.equal(valueAt(rolex, 10), valueAt(rolex, 1));
+  const mattress = item({ name: 'Casper mattress', category: 'furniture' });
+  assert.equal(valueItem(mattress, today)!.estimate, 0);
+  const shimano = item({ name: 'E-bike', model: 'Shimano EP8 e-bike', category: 'sports' });
+  const plain = item({ name: 'E-bike', model: 'Generic e-bike', category: 'sports' });
+  assert.ok(valueAt(shimano, 3) > valueAt(plain, 3));
 });
 
 test('one-year-old electronics in good condition, no warranty', () => {
   const v = valueItem(item({}), today)!;
-  // 1000 × 0.8 × 0.78 = 624 → rounds to 620
+  // Electronics keep about 62% after a year → 620
   assert.equal(v.estimate, 620);
   assert.equal(v.lost, 380);
   assert.ok(v.low < v.estimate && v.estimate < v.high);

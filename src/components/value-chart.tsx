@@ -47,7 +47,7 @@ export function ValueChart({
   const fullLife = Math.min(plan.points.length - 1, Math.ceil(plan.profile.lifeYears * 12 * 1.15));
   // The maths view stops a little after the crossing, where the story is.
   const lastMonth =
-    mode === 'costs' && plan.status !== 'use-up' ? Math.min(fullLife, Math.round(plan.bestAge * 12) + 18) : fullLife;
+    mode === 'costs' && showWindowFor(plan) ? Math.min(fullLife, Math.round(plan.bestAge * 12) + 18) : fullLife;
   const pts = plan.points.slice(0, lastMonth + 1);
   const xMax = lastMonth / 12;
   const innerW = Math.max(1, width - PAD.left - PAD.right);
@@ -55,7 +55,7 @@ export function ValueChart({
 
   const costPts = pts.filter((p) => p.age >= 0.5);
   const yMax =
-    mode === 'value' ? price : Math.max(1, ...costPts.map((p) => Math.max(p.average ?? 0, p.nextYear))) * 1.1;
+    mode === 'value' ? price : Math.max(1, ...costPts.map((p) => Math.max(p.average ?? 0, p.marginal))) * 1.1;
   const x = (age: number) => PAD.left + (Math.min(age, xMax) / xMax) * innerW;
   const y = (v: number) => PAD.top + innerH - (Math.max(0, Math.min(v, yMax)) / yMax) * innerH;
   const path = (values: { age: number; v: number }[]) =>
@@ -64,8 +64,11 @@ export function ValueChart({
   const step = xMax > 8 ? 2 : 1;
   const xTicks = Array.from({ length: Math.floor(xMax / step) + 1 }, (_, i) => i * step);
   const yTicks = [0, yMax / 2, yMax];
-  const showWindow = plan.status !== 'use-up';
+  const showWindow = showWindowFor(plan);
   const bestPoint = pts[Math.min(pts.length - 1, Math.round(plan.bestAge * 12))];
+  // Keep the "best time" label clear of the "Now" label when they're close.
+  const labelBelow =
+    mode === 'value' && !!bestPoint && plan.nowAge <= xMax && Math.abs(x(bestPoint.age) - x(plan.nowAge)) < 110;
 
   return (
     <View>
@@ -168,7 +171,7 @@ export function ValueChart({
                   fill="none"
                 />
                 <Path
-                  d={path(costPts.map((p) => ({ age: p.age, v: p.nextYear })))}
+                  d={path(costPts.map((p) => ({ age: p.age, v: p.marginal })))}
                   stroke={c.accent}
                   strokeWidth={2.5}
                   fill="none"
@@ -190,7 +193,7 @@ export function ValueChart({
                 <SvgText
                   fontFamily={FONT}
                   x={x(bestPoint.age)}
-                  y={y(mode === 'value' ? bestPoint.value : (bestPoint.average ?? 0)) - 12}
+                  y={y(mode === 'value' ? bestPoint.value : (bestPoint.average ?? 0)) + (labelBelow ? 22 : -12)}
                   fontSize={11}
                   fontWeight="700"
                   fill={c.accent}
@@ -228,8 +231,8 @@ export function ValueChart({
       </View>
       {mode === 'costs' ? (
         <View style={styles.legend}>
-          <LegendDot color={c.ink} label="Average yearly cost so far" />
-          <LegendDot color={c.accent} label="Cost of keeping it another year" />
+          <LegendDot color={c.ink} label="Average yearly cost if sold at this age" />
+          <LegendDot color={c.accent} label="Yearly cost of keeping it" />
         </View>
       ) : null}
     </View>
@@ -259,3 +262,7 @@ const styles = StyleSheet.create({
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendSwatch: { width: 10, height: 3, borderRadius: 2 },
 });
+
+function showWindowFor(plan: SellPlan): boolean {
+  return plan.status === 'early' || plan.status === 'window' || plan.status === 'late';
+}

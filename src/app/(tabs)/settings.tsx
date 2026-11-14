@@ -160,6 +160,29 @@ export default function SettingsScreen() {
           ) : null}
         </Section>
 
+        <Section
+          title="Upgrading"
+          footer={
+            settings.upgradeStyle === 'value'
+              ? 'Sell timing counts only value lost and the risk of it failing. Best if you keep things until they’re worn.'
+              : settings.upgradeStyle === 'latest'
+                ? 'Falling behind newer models counts heavily, so you’ll be told to sell and upgrade sooner.'
+                : 'Weighs value lost, failure risk and falling behind newer models evenly.'
+          }>
+          <View style={{ padding: Spacing.md, gap: Spacing.sm }}>
+            <AppText variant="subhead">How much do you care about having the latest?</AppText>
+            <Segmented
+              value={settings.upgradeStyle}
+              onChange={(upgradeStyle) => updateSettings({ upgradeStyle })}
+              options={[
+                { value: 'value', label: 'Full value' },
+                { value: 'balanced', label: 'Balanced' },
+                { value: 'latest', label: 'Stay current' },
+              ]}
+            />
+          </View>
+        </Section>
+
         <Section title="Warranty reminders" footer={reminderFooter}>
           <Row label="Remind me" icon="notifications-outline" last={!on}>
             <Switch

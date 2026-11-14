@@ -13,6 +13,7 @@ const SETTINGS_KEY = 'settings.v1';
 const DEFAULT_SETTINGS: Settings = {
   onboarded: false,
   taxRegion: 'US',
+  upgradeStyle: 'balanced',
   depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
   insurance: { insurer: '', policyNumber: '', sumInsured: null },
   remindersEnabled: false,

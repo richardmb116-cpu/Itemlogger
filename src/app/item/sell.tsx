@@ -14,19 +14,25 @@ import { formatMoney, parsePrice } from '@/lib/format';
 import { buildListing, listingText } from '@/lib/listing';
 import { marketLinks, searchQuery, type MarketLink } from '@/lib/market-links';
 import { useStore } from '@/lib/store';
-import { sellPlan } from '@/lib/upgrade';
+import { profileFor, type Evidence } from '@/lib/lifecycle';
+import { repairAdvice, sellPlan } from '@/lib/upgrade';
 import {
   checkedAgo,
   conditionInfo,
   currentValue,
-  CURVES,
   formatAge,
   roundPrice,
   suggestedAskingPrice,
   valueItem,
-  WARRANTY_BONUS,
+  warrantyBonusAt,
   type CurrentValue,
 } from '@/lib/valuation';
+
+const EVIDENCE_FOOTER: Record<Evidence, string> = {
+  measured: 'Based on measured resale prices.',
+  rule: 'Based on an industry rule of thumb.',
+  inferred: 'Estimated from similar items.',
+};
 
 const LINK_ICONS: Record<MarketLink['id'], 'pricetags-outline' | 'storefront-outline' | 'search-outline'> = {
   ebay: 'pricetags-outline',
@@ -61,6 +67,7 @@ export default function SellScreen() {
   const body = editedBody ?? generated?.body ?? '';
   const [bodyHeight, setBodyHeight] = useState(160);
 
+  const [repair, setRepair] = useState('');
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     if (!notice) return;
@@ -80,8 +87,10 @@ export default function SellScreen() {
   }
 
   const text = listingText({ title, body });
-  const curve = CURVES[item.category];
-  const plan = sellPlan(item, region);
+  const profile = profileFor(item);
+  const plan = sellPlan(item, region, settings.upgradeStyle);
+  const repairQuote = parsePrice(repair);
+  const repairVerdict = repairQuote != null && item.price ? repairAdvice(item, repairQuote) : null;
   const links = marketLinks(item, region);
   const myPriceValue = parsePrice(myPrice);
 
@@ -209,6 +218,40 @@ export default function SellScreen() {
 
         {plan ? <SellAdvice plan={plan} item={item} region={region} /> : null}
 
+        {item.price ? (
+          <Section
+            title="Got a repair quote?"
+            footer={
+              repairVerdict
+                ? repairVerdict.reason
+                : 'Repairs are usually worth it under about half the cost of a new one, less as it ages.'
+            }>
+            <Row label="Repair cost" last={!repairVerdict}>
+              <TextInput
+                value={repair}
+                onChangeText={setRepair}
+                keyboardType="decimal-pad"
+                placeholder="0"
+                placeholderTextColor={c.textTertiary}
+                style={[styles.input, { color: c.text, textAlign: 'right' }]}
+                accessibilityLabel="Repair quote"
+              />
+            </Row>
+            {repairVerdict ? (
+              <Row
+                label={repairVerdict.repair ? 'Repair it' : 'Replace it'}
+                icon={repairVerdict.repair ? 'construct-outline' : 'swap-horizontal-outline'}
+                value={
+                  repairVerdict.threshold > 0
+                    ? `Worth it under ${formatMoney(repairVerdict.threshold, region, { cents: false })}`
+                    : undefined
+                }
+                last
+              />
+            ) : null}
+          </Section>
+        ) : null}
+
         {/* Free price checks: open real listings, then type in what you see */}
         <Section
           title="Check real prices"
@@ -244,12 +287,21 @@ export default function SellScreen() {
         </Section>
 
         {valuation && current?.source !== 'checked' ? (
-          <Section title="How the estimate is worked out" footer={`${curve.note}. Based on typical resale prices, not live listings.`}>
+          <Section
+            title="How the estimate is worked out"
+            footer={`${profile.note}. ${EVIDENCE_FOOTER[profile.evidence]} Not live listings.`}>
+            <Row label="Resale curve" value={profile.label} />
             <Row label="Age" value={formatAge(valuation.ageYears)} />
             <Row label="Condition" value={conditionInfo(item.condition).label} />
             <Row
               label="Warranty"
-              value={valuation.warrantyBonus ? `Still covered (+${Math.round(WARRANTY_BONUS * 100)}%)` : 'Not covered'}
+              value={
+                valuation.warrantyBonus
+                  ? `Still covered (+${Math.round(warrantyBonusAt(item, valuation.ageYears) * 100)}%)`
+                  : profile.warrantyTransferable
+                    ? 'Not covered'
+                    : 'Doesn’t pass to a buyer'
+              }
               last
             />
           </Section>

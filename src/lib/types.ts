@@ -79,10 +79,14 @@ export type DepreciationSettings = {
   showAdvanced: boolean;
 };
 
+/** How much the owner values having the latest version: sets how heavily obsolescence counts. */
+export type UpgradeStyle = 'value' | 'balanced' | 'latest';
+
 export type Settings = {
   /** The welcome screens have been seen. */
   onboarded: boolean;
   taxRegion: TaxRegion;
+  upgradeStyle: UpgradeStyle;
   depreciation: DepreciationSettings;
   insurance: InsuranceDetails;
   /** Warranty expiry notifications switched on by the user. */

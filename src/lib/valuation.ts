@@ -1,16 +1,14 @@
 import { daysBetween, parseISODate } from './dates';
-import type { Category, Condition, Item } from './types';
+import { brandMultiplier, fractionAt, profileFor, type Evidence } from './lifecycle';
+import type { Condition, Item } from './types';
 import { warrantyStatus } from './warranty';
 
-import { CURVES, fractionAt, profileFor } from './lifecycle';
-
-export { CURVES } from './lifecycle';
-
 export const CONDITIONS: { id: Condition; label: string; factor: number; listing: string }[] = [
-  { id: 'like-new', label: 'Like new', factor: 1.1, listing: 'In like-new condition, barely used.' },
+  // Spread from used-bike pricing: "fair" sells for about 0.6 of "excellent" (Bicycle Blue Book).
+  { id: 'like-new', label: 'Like new', factor: 1.08, listing: 'In like-new condition, barely used.' },
   { id: 'good', label: 'Good', factor: 1, listing: 'In good condition with normal signs of use.' },
-  { id: 'fair', label: 'Fair', factor: 0.8, listing: 'In fair condition: works well, with visible wear.' },
-  { id: 'worn', label: 'Worn', factor: 0.6, listing: 'Well used, with plenty of wear, but still works.' },
+  { id: 'fair', label: 'Fair', factor: 0.68, listing: 'In fair condition: works well, with visible wear.' },
+  { id: 'worn', label: 'Worn', factor: 0.5, listing: 'Well used, with plenty of wear, but still works.' },
 ];
 
 export function conditionInfo(id: Condition) {
@@ -20,9 +18,12 @@ export function conditionInfo(id: Condition) {
 /** Buyers pay a little more when the warranty still has time to run. */
 export const WARRANTY_BONUS = 0.05;
 
-/** The warranty premium at a given age: full with a year or more left, fading to nothing as it runs out. */
-export function warrantyBonusAt(item: Pick<Item, 'warrantyMonths'>, years: number): number {
-  if (!item.warrantyMonths) return 0;
+/**
+ * The warranty premium at a given age: full with a year or more left, fading to nothing as it runs out.
+ * None where the warranty doesn't pass to a buyer (e.g. Herman Miller, Steelcase).
+ */
+export function warrantyBonusAt(item: Pick<Item, 'warrantyMonths' | 'name' | 'model' | 'category'>, years: number): number {
+  if (!item.warrantyMonths || !profileFor(item).warrantyTransferable) return 0;
   const remaining = item.warrantyMonths / 12 - years;
   return WARRANTY_BONUS * Math.min(1, Math.max(0, remaining));
 }
@@ -39,14 +40,12 @@ export type Valuation = {
   inAYear: number;
   ageYears: number;
   warrantyBonus: boolean;
+  /** How good the evidence behind the curve is; the range widens when it's weaker. */
+  evidence: Evidence;
 };
 
-/** The basic category curve (no useful-life cliff or brand effect). Kept for reference and tests. */
-export function curveAt(category: Category, years: number): number {
-  const curve = CURVES[category];
-  const share = (1 - curve.firstDrop) * Math.pow(1 - curve.perYear, Math.max(0, years));
-  return Math.max(curve.floor, share);
-}
+/** ± range around the estimate by evidence quality. */
+const RANGE: Record<Evidence, number> = { measured: 0.12, rule: 0.2, inferred: 0.25 };
 
 type ValueItem = Pick<Item, 'name' | 'model' | 'price' | 'purchaseDate' | 'category' | 'condition' | 'warrantyMonths'>;
 
@@ -71,9 +70,17 @@ export function valueAt(
 ): number {
   if (item.price == null || item.price <= 0) return 0;
   const k = opts.calibrate && item.checkedPrice ? calibration({ ...item, checkedPrice: item.checkedPrice }) : 1;
-  const raw =
-    item.price * fractionAt(profileFor(item), years) * conditionInfo(item.condition).factor * (1 + warrantyBonusAt(item, years)) * k;
-  return Math.min(item.price, raw);
+  return Math.min(item.price, item.price * modelShare(item, years) * k);
+}
+
+/** Model value as a share of price at an age: profile curve × brand × condition × warranty premium. */
+function modelShare(item: ValueItem, years: number): number {
+  const p = profileFor(item);
+  const base = fractionAt(p, years);
+  const brand = brandMultiplier(item, p)?.mult ?? 1;
+  // Brand lifts value above the floor, never past 95% of the price paid (market-priced goods aside).
+  const branded = p.market ? base : Math.min(0.95, p.floor + (base - p.floor) * brand);
+  return branded * conditionInfo(item.condition).factor * (1 + warrantyBonusAt(item, years));
 }
 
 /** Round to amounts people actually ask for: $5 steps under $200, $10 under $1,000, then $50. */
@@ -86,25 +93,29 @@ export function valueItem(item: ValueItem, today = new Date()): Valuation | null
   if (item.price == null || item.price <= 0) return null;
   const ageYears = Math.max(0, daysBetween(parseISODate(item.purchaseDate), today) / 365.25);
   const warranty = warrantyStatus(item, today);
-  const warrantyBonus = warranty.state === 'active' || warranty.state === 'expiring';
+  const warrantyBonus = (warranty.state === 'active' || warranty.state === 'expiring') && warrantyBonusAt(item, ageYears) > 0;
   const p = profileFor(item);
-  const factor = conditionInfo(item.condition).factor * (1 + warrantyBonusAt(item, ageYears));
+  const range = RANGE[p.evidence];
 
   // Never estimate more than the price paid, however good the condition.
-  const raw = Math.min(item.price, item.price * fractionAt(p, ageYears) * factor);
+  const raw = Math.min(item.price, item.price * modelShare(item, ageYears));
+  if (raw <= 0) {
+    return { estimate: 0, low: 0, high: 0, lost: item.price, lostShare: 1, inAYear: 0, ageYears, warrantyBonus, evidence: p.evidence };
+  }
   const estimate = roundPrice(raw);
   const inAYear = roundPrice(valueAt(item, ageYears + 1));
   const lost = Math.max(0, item.price - estimate);
 
   return {
     estimate,
-    low: roundPrice(raw * 0.85),
-    high: roundPrice(Math.min(item.price, raw * 1.15)),
+    low: roundPrice(raw * (1 - range)),
+    high: roundPrice(Math.min(item.price, raw * (1 + range))),
     lost,
     lostShare: lost / item.price,
     inAYear: Math.min(inAYear, estimate),
     ageYears,
     warrantyBonus,
+    evidence: p.evidence,
   };
 }
 

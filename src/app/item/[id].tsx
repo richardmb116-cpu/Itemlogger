@@ -41,7 +41,7 @@ export default function ItemDetailScreen() {
   const region = settings.taxRegion;
   const cat = categoryInfo(item.category);
   const photo = itemPhoto(item);
-  const plan = item.sold ? null : sellPlan(item, region);
+  const plan = item.sold ? null : sellPlan(item, region, settings.upgradeStyle);
   const age = ageOf(item.purchaseDate);
   const birthday = nextBirthday(item.purchaseDate);
   const birthdayToday = !item.sold && birthday.daysUntil === 0;
@@ -188,13 +188,17 @@ export default function ItemDetailScreen() {
               <View style={styles.bestRow}>
                 <View style={[styles.bestDot, { backgroundColor: plan.status === 'window' ? c.green : plan.status === 'late' ? c.orange : c.onInk }]} />
                 <AppText variant="footnote" color={c.onInk} style={{ opacity: 0.85, fontWeight: '600' }}>
-                  {plan.status === 'use-up'
-                    ? 'Best plan: use it until it’s done'
-                    : plan.status === 'early'
-                      ? `Best time to sell: around ${formatMonthYear(plan.bestDate, region)}`
-                      : plan.status === 'window'
-                        ? 'Good time to sell now'
-                        : 'Past its best time to sell'}
+                  {plan.status === 'early'
+                    ? `Best time to sell: ${formatMonthYear(plan.windowStartDate, region)} – ${formatMonthYear(plan.windowEndDate, region)}`
+                    : plan.status === 'window'
+                      ? 'Good time to sell now'
+                      : plan.status === 'late'
+                        ? 'Past its best time to sell'
+                        : plan.status === 'market'
+                          ? 'Priced by the market, not by age'
+                          : plan.status === 'use-up' && plan.bestNet >= 40
+                            ? 'No rush to sell: it holds up well'
+                            : 'Best plan: use it until it’s done'}
                 </AppText>
               </View>
             ) : null}

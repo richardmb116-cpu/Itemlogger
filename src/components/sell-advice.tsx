@@ -7,46 +7,87 @@ import { ValueChart } from '@/components/value-chart';
 import { Radius, Spacing, useColors, type Palette } from '@/constants/theme';
 import { daysBetween, parseISODate } from '@/lib/dates';
 import { formatMoney, formatMonthYear } from '@/lib/format';
-import type { Item, TaxRegion } from '@/lib/types';
+import { resaleBrand, type Evidence } from '@/lib/lifecycle';
+import { WORTH_SELLING_MIN } from '@/lib/selling';
+import { useStore } from '@/lib/store';
+import type { Item, TaxRegion, UpgradeStyle } from '@/lib/types';
 import { sellStatusLabel, type SellPlan } from '@/lib/upgrade';
 
 export function statusColor(plan: SellPlan, c: Palette): string {
   return plan.status === 'window' ? c.green : plan.status === 'late' ? c.orange : c.textSecondary;
 }
 
+const EVIDENCE_LABEL: Record<Evidence, string> = {
+  measured: 'Measured prices',
+  rule: 'Industry rule of thumb',
+  inferred: 'Estimated',
+};
+
 /** Headline and one-line explanation for the recommendation. */
 export function adviceCopy(plan: SellPlan, region: TaxRegion, today = new Date()): { headline: string; body: string } {
   const money = (n: number) => formatMoney(n, region, { cents: false });
+  const month = (iso: string) => formatMonthYear(iso, region);
   const monthsLeft = Math.max(1, Math.round(daysBetween(today, parseISODate(plan.windowEndDate)) / 30.44));
+  const early = plan.costYearEarly != null && plan.costYearEarly >= 5 ? plan.costYearEarly : null;
+  const late = plan.costYearLate != null && plan.costYearLate >= 5 ? plan.costYearLate : null;
   switch (plan.status) {
-    case 'early':
+    case 'early': {
+      const timing =
+        early && late
+          ? ` Selling a year early would cost about ${money(early)}; a year late, about ${money(late)}.`
+          : late
+            ? ` Waiting a year too long would cost about ${money(late)}.`
+            : '';
       return {
-        headline: `Sell around ${formatMonthYear(plan.bestDate, region)}`,
-        body: `That's when keeping it starts to cost more each year than owning it has so far. It should still fetch about ${money(plan.bestValue)} toward your next one.`,
+        headline: `Sell between ${month(plan.windowStartDate)} and ${month(plan.windowEndDate)}`,
+        body: `Expect about ${money(plan.bestValue)}, or ${money(plan.bestNet)} in your pocket after ${plan.channel.fee ? 'fees and effort' : 'your time'}.${timing}`,
       };
+    }
     case 'window':
       return {
-        headline: `Sell in the next ${monthsLeft} month${monthsLeft === 1 ? '' : 's'}`,
-        body: `It should fetch about ${money(plan.nowValue)} now. From here, each extra year costs more than an average year of owning it has.`,
+        headline: `Good time to sell: the next ${monthsLeft} month${monthsLeft === 1 ? '' : 's'}`,
+        body: `It should fetch about ${money(plan.nowValue)}, or ${money(plan.nowNet)} after ${plan.channel.fee ? 'fees and effort' : 'your time'}.${late ? ` Holding it a year past ${month(plan.windowEndDate)} costs about ${money(late)}.` : ''}`,
       };
     case 'late':
       return {
         headline: 'Sell soon, or use it until it’s done',
-        body: `Its value is falling fastest now. Keeping it another year will likely cost about ${money(plan.keepCostNextYear)} in value.`,
+        body: `It’s past its best time to sell. Keeping it another year will likely cost about ${money(plan.keepCostNextYear)} in value and risk.`,
+      };
+    case 'market':
+      return {
+        headline: 'Hold: its price follows the market',
+        body: 'Pieces like this aren’t priced by age. Sell when the market for them is strong, or when you simply want to, not on a schedule.',
+      };
+    case 'no-resale':
+      return {
+        headline: 'Use it until it’s done',
+        body: 'There’s no real second-hand market for this, so it’s worth what it does for you. Donate or recycle it when you’re finished.',
       };
     default:
       return {
-        headline: 'Use it until it’s done',
-        body: 'Most of its resale value goes early, so selling later won’t fund much of an upgrade. Get full use out of it.',
+        headline: plan.bestNet < WORTH_SELLING_MIN ? 'Get full use out of it' : 'Keep it: it holds its value',
+        body:
+          plan.bestNet < WORTH_SELLING_MIN
+            ? 'By the time you’d want to replace it, it would net too little to be worth the hassle of selling. Get full use out of it, then donate or trade it in.'
+            : `No year stands out as the time to sell, so keep using it and sell whenever you’re ready to replace it. Around ${month(plan.bestDate)} it should still fetch about ${money(plan.bestValue)}.`,
       };
   }
 }
 
+const STYLE_OPTIONS: { value: UpgradeStyle; label: string }[] = [
+  { value: 'value', label: 'Full value' },
+  { value: 'balanced', label: 'Balanced' },
+  { value: 'latest', label: 'Stay current' },
+];
+
 export function SellAdvice({ plan, item, region }: { plan: SellPlan; item: Item; region: TaxRegion }) {
   const c = useColors();
+  const { settings, updateSettings } = useStore();
   const [mode, setMode] = useState<'value' | 'costs'>('value');
   const copy = adviceCopy(plan, region);
   const color = statusColor(plan, c);
+  const timed = plan.status === 'early' || plan.status === 'window' || plan.status === 'late' || plan.status === 'use-up';
+  const brand = resaleBrand(item);
 
   return (
     <View style={[styles.card, { backgroundColor: c.card }]}>
@@ -61,39 +102,55 @@ export function SellAdvice({ plan, item, region }: { plan: SellPlan; item: Item;
         {copy.body}
       </AppText>
 
-      <View style={{ marginTop: Spacing.md }}>
-        <Segmented
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: 'value', label: 'Value over time' },
-            { value: 'costs', label: 'The maths' },
-          ]}
-        />
-      </View>
+      {timed ? (
+        <View style={{ marginTop: Spacing.md, gap: Spacing.xs }}>
+          <AppText variant="caption" color={c.textSecondary}>
+            How much do you care about having the latest?
+          </AppText>
+          <Segmented
+            value={settings.upgradeStyle}
+            onChange={(upgradeStyle) => updateSettings({ upgradeStyle })}
+            options={STYLE_OPTIONS}
+          />
+        </View>
+      ) : null}
+
+      {timed ? (
+        <View style={{ marginTop: Spacing.sm }}>
+          <Segmented
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'value', label: 'Value over time' },
+              { value: 'costs', label: 'The maths' },
+            ]}
+          />
+        </View>
+      ) : null}
       <View style={[styles.chart, { backgroundColor: c.raised }]}>
         <ValueChart
           plan={plan}
           region={region}
           price={item.price ?? 0}
           warrantyYears={item.warrantyMonths ? item.warrantyMonths / 12 : null}
-          mode={mode}
+          mode={timed ? mode : 'value'}
         />
       </View>
-      {mode === 'costs' ? (
+      {timed && mode === 'costs' ? (
         <AppText variant="footnote" color={c.textSecondary} style={{ lineHeight: 18 }}>
-          The black line is what owning it has cost per year so far. The blue line is what keeping it one more year
-          would cost. While blue is under black, keeping it is good value. Where blue rises above black, every extra
-          year costs more than a typical year did: that crossing is the best time to sell and upgrade.
+          The black line is the average yearly cost of owning one if you sell at that age: the price, less what
+          you’d get back after fees, plus the cost of falling behind newer models and the risk of it dying first.
+          The blue line is what keeping it costs per year at each age. The lowest point of the black line is the best
+          time to sell, and it’s where blue crosses black. The shaded band is every age within 5% of that best cost.
         </AppText>
       ) : null}
 
       <View style={styles.facts}>
         <Fact label="Keeping it 1 more year" value={`−${formatMoney(plan.keepCostNextYear, region, { cents: false })}`} />
-        <Fact label="Typical useful life" value={`~${plan.profile.lifeYears} yrs`} detail={plan.profile.lifeBasis} />
+        <Fact label="Useful life" value={`~${plan.profile.lifeYears} yrs`} detail={plan.profile.label} />
         <Fact
-          label={plan.calibrated ? 'Tuned to your price' : plan.profile.brand ? 'Strong resale brand' : 'Resale curve'}
-          value={plan.calibrated ? 'Yes' : (plan.profile.brand ?? 'Typical')}
+          label={plan.calibrated ? 'Tuned to your price' : brand ? 'Strong resale' : 'Based on'}
+          value={plan.calibrated ? 'Yes' : (brand ?? EVIDENCE_LABEL[plan.profile.evidence])}
         />
       </View>
 
