@@ -25,7 +25,8 @@ export default function TabsLayout() {
   if (!settings.onboarded) return <Redirect href="/welcome" />;
   return (
     <Tabs style={{ flex: 1 }}>
-      <TabSlot />
+      {/* The slot defaults to never shrinking, so screens grew to full height and nothing scrolled. */}
+      <TabSlot style={styles.slot} />
       {/* TabList must be a direct child of Tabs so the router registers the triggers; it is the bar itself. */}
       <TabList
         style={[
@@ -70,6 +71,7 @@ function TabButton({
 }
 
 const styles = StyleSheet.create({
+  slot: { flexGrow: 1, flexShrink: 1, flexBasis: 0, minHeight: 0 },
   bar: {
     position: 'absolute',
     bottom: 20,
