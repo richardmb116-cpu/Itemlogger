@@ -83,7 +83,8 @@ export default function ItemsScreen() {
       .includes(q);
   });
 
-  const addItem = () => router.push('/item/edit');
+  // Adding starts with a receipt scan; adding by hand is one tap away on that screen.
+  const addItem = () => router.push('/scan');
   const showReminderPrompt = !settings.remindersEnabled && !settings.remindersPromptDismissed && covered > 0;
   const turnOnReminders = async () => {
     if (!(await enableReminders())) explainBlockedNotifications();

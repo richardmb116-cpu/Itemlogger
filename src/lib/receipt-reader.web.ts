@@ -34,14 +34,24 @@ export async function receiptReaderAvailable(): Promise<boolean> {
 /** Ask for a photo: on iPhone this offers the camera or the photo library. */
 export function pickReceipt(): Promise<ReceiptImage | null> {
   return new Promise((resolve) => {
+    // iOS Safari only reliably reports the picked file for an input that's in the page.
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/jpeg,image/png,image/webp,image/heic,image/*';
-    input.onchange = () => {
-      const file = input.files?.[0];
-      resolve(file ? { file, previewUri: URL.createObjectURL(file) } : null);
+    input.accept = 'image/*';
+    input.style.cssText = 'position:fixed;left:-9999px;width:1px;height:1px;opacity:0';
+    document.body.appendChild(input);
+    let done = false;
+    const finish = (image: ReceiptImage | null) => {
+      if (done) return;
+      done = true;
+      input.remove();
+      resolve(image);
     };
-    input.addEventListener('cancel', () => resolve(null));
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      finish(file ? { file, previewUri: URL.createObjectURL(file) } : null);
+    });
+    input.addEventListener('cancel', () => finish(null));
     input.click();
   });
 }

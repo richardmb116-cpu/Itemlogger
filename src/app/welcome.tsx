@@ -85,7 +85,7 @@ export default function WelcomeScreen() {
     updateSettings({ onboarded: true, taxRegion: region });
     if (start === 'explore' && items.length === 0) addSampleItems(region);
     router.replace('/');
-    if (start === 'add') setTimeout(() => router.push('/item/edit'), 50);
+    if (start === 'add') setTimeout(() => router.push('/scan'), 50);
   };
 
   return (

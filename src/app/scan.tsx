@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -64,7 +64,8 @@ export default function ScanScreen() {
       setStage('review');
     } catch (e) {
       const message = readerErrorMessage(e);
-      if (message) setError(message);
+      const code = (e as { code?: string })?.code ?? (e instanceof Error ? e.message : 'unknown');
+      if (message) setError(`${message}\n(${code})`);
       setStage('start');
     }
   };
@@ -114,6 +115,7 @@ export default function ScanScreen() {
     const check = totalCheck(scan);
     return (
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <Stack.Screen options={{ title: 'Choose what to add' }} />
         <ScrollView
           style={{ backgroundColor: c.background }}
           contentContainerStyle={{ paddingTop: Spacing.lg, paddingBottom: 140 }}
