@@ -114,6 +114,17 @@ export default function EditItemScreen() {
         contentContainerStyle={{ paddingTop: Spacing.lg, paddingBottom: 60 }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive">
+        {existing ? null : (
+          <Section>
+            <Row
+              label="Scan a receipt to add several"
+              icon="scan-outline"
+              chevron
+              last
+              onPress={() => router.replace('/scan')}
+            />
+          </Section>
+        )}
         <View style={styles.photoRow}>
           <PhotoSlot label="Item photo" icon="camera" uri={photoUri} onPress={() => choose('photo')} />
           <PhotoSlot label="Receipt" icon="receipt" uri={receiptUri} onPress={() => choose('receipt')} />

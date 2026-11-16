@@ -8,6 +8,12 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 ## What's in it today
 
 - **Items**: photo, receipt photo, price, purchase date, store, serial number, category, notes.
+- **Receipt scanning**: snap or choose a photo of a receipt and every product on it is listed
+  separately (a "2 ×" line becomes two items), with tax, fees and groceries set aside. Tick the ones
+  to add; each gets the store, date, price, a starting warranty and the receipt photo. Claude reads
+  the receipt (`src/lib/receipt.ts` checks everything it returns; unit-tested). In the Claude preview
+  this uses the page's own access to Claude, with the viewer's permission; the installed app shows
+  scanning as coming soon until a small server with a Claude API key is added.
 - **Warranty tracking**: each item shows time left, with an "Expiring soon" shelf on the home screen.
 - **Warranty reminders**: notifications at 9 am, 30 days and 1 week before a warranty ends (or on the day,
   your choice in Settings). Tapping one opens the item, showing its receipt and serial number.
@@ -151,7 +157,7 @@ Built one at a time:
 4. ~~Resale listing generator~~, ~~manual price checks~~; automatic eBay price lookups via a small cached
    server (stage 2) and opt-in shared sale prices (stage 3)
 5. ~~Depreciation estimates, work-use percentage and accountant export~~
-6. Receipt OCR, barcode and serial scanning, and email receipt import
+6. ~~Receipt scanning~~ (preview; installed app next), barcode and serial scanning, and email receipt import
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
 8. Rooms and locations, move mode, lending tracker, maintenance reminders
 9. ~~Sync and backup~~ (Supabase); shared household and a trusted contact

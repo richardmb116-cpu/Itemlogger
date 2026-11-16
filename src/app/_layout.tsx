@@ -47,6 +47,7 @@ export default function RootLayout() {
             <Stack.Screen name="claim" options={{ presentation: 'modal', title: 'Claim pack' }} />
             <Stack.Screen name="accountant" options={{ presentation: 'modal', title: 'For your accountant' }} />
             <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Sync' }} />
+          <Stack.Screen name="scan" options={{ presentation: 'modal', title: 'Scan receipt' }} />
           </Stack>
         </ThemeProvider>
       </SyncProvider>
