@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: Settings = {
   birthdaysEnabled: true,
   reminderDays: DEFAULT_REMINDER_DAYS,
   remindersPromptDismissed: false,
+  groupByCategory: false,
 };
 
 type Store = {

@@ -56,7 +56,9 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
   item with make and model, serial, purchase details, price paid, current value, warranty, photo and receipt.
   Flags gaps first (missing receipts, photos, serials) and warns when items cost more than the contents
   sum insured. Shared from the iPhone share sheet; previewed on screen in the browser.
-- **Search and filters** by name, store, serial, work, personal and sold.
+- **Search, filters and groups**: an always-on search bar (every word must match, across name, brand,
+  store, serial, notes and category), Personal / Work / Sold filters, category chips with counts, and
+  a Group by category view whose sections collapse, each with its item count and total worth.
 - **Sync across devices** (optional): sign in with an emailed 6-digit code and your items, photos, receipts
   and settings stay the same on iPhone and iPad, backed up in Supabase. Offline-first: everything works
   without an account, edits queue on the device, and the most recent edit wins when two devices disagree.

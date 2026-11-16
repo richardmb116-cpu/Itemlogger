@@ -3,7 +3,7 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useMemo, useState, type ComponentProps } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, SectionList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemCard, ItemRow, ItemThumb } from '@/components/item-bits';
@@ -11,21 +11,19 @@ import { AppText, Chip, IconButton, SectionHeading, tap } from '@/components/ui'
 import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
 import { ordinal, upcomingBirthdays } from '@/lib/birthdays';
 import { CATEGORIES, categoryInfo } from '@/lib/categories';
+import { categoryCounts, filterItems, groupByCategory, type UseFilter } from '@/lib/item-filter';
 import { formatMoney } from '@/lib/format';
-import { CATEGORY_PHOTOS, HOME_HERO_PHOTO } from '@/lib/photos';
+import { HOME_HERO_PHOTO } from '@/lib/photos';
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { sortRecent, useStore } from '@/lib/store';
 import { sellPlan } from '@/lib/upgrade';
 import { currencyFor } from '@/lib/tax';
-import type { Category, ItemUse } from '@/lib/types';
+import type { Category } from '@/lib/types';
 import { useEnableReminders } from '@/lib/use-reminders';
 import { currentValue } from '@/lib/valuation';
 import { warrantyStatus } from '@/lib/warranty';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
-
-/** Below this many items, browsing by category adds clutter rather than help. */
-const COLLECTIONS_MIN = 12;
 
 function greeting(now = new Date()): string {
   const h = now.getHours();
@@ -37,10 +35,11 @@ export default function ItemsScreen() {
   const { items, settings, updateSettings } = useStore();
   const enableReminders = useEnableReminders();
   const region = settings.taxRegion;
-  const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | null>(null);
-  const [use, setUse] = useState<ItemUse | 'sold' | null>(null);
+  const [use, setUse] = useState<UseFilter>(null);
+  const [collapsed, setCollapsed] = useState<Set<Category>>(new Set());
+  const grouped = settings.groupByCategory;
 
   const sorted = useMemo(() => sortRecent(items), [items]);
   // Sold items are kept for records but drop out of totals, warranties and categories.
@@ -67,22 +66,28 @@ export default function ItemsScreen() {
         !!r.plan && (r.plan.status === 'window' || r.plan.status === 'late'),
     );
   const sellStatuses = new Map(readyToSell.map((r) => [r.item.id, r.plan.status]));
-  const usedCategories = CATEGORIES.filter((cat) => owned.some((i) => i.category === cat.id));
-
-  const q = query.trim().toLowerCase();
-  const visible = sorted.filter((item) => {
-    if (category && item.category !== category) return false;
-    if (use === 'sold') {
-      if (!item.sold) return false;
-    } else if (item.sold || (use && item.use !== use)) {
-      return false;
-    }
-    if (!q) return true;
-    return [item.name, item.model, item.store, item.serial, categoryInfo(item.category).label, item.notes]
-      .join(' ')
-      .toLowerCase()
-      .includes(q);
-  });
+  const q = query.trim();
+  const visible = filterItems(sorted, { query, category, use });
+  // Category chips count what the other filters leave, so the numbers match what a tap shows.
+  const counts = categoryCounts(filterItems(sorted, { query, category: null, use }));
+  const usedCategories = CATEGORIES.filter((cat) => counts.has(cat.id) || cat.id === category);
+  const sections = (grouped ? groupByCategory(visible) : [{ category: null, label: '', items: visible }]).map((g) => ({
+    key: g.category ?? 'all',
+    category: g.category,
+    label: g.label,
+    count: g.items.length,
+    worth: g.items.reduce((s, i) => s + (values.get(i.id) ?? 0), 0),
+    data: g.category && collapsed.has(g.category) ? [] : g.items,
+  }));
+  const toggleSection = (cat: Category) => {
+    tap();
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) next.delete(cat);
+      else next.add(cat);
+      return next;
+    });
+  };
 
   // Adding starts with a receipt scan; adding by hand is one tap away on that screen.
   const addItem = () => router.push('/scan');
@@ -136,33 +141,28 @@ export default function ItemsScreen() {
             {greeting()}
           </AppText>
         </View>
-        <IconButton
-          icon={searching ? 'close' : 'search'}
-          label={searching ? 'Close search' : 'Search'}
-          onPress={() => {
-            setSearching((s) => !s);
-            setQuery('');
-          }}
-        />
         <IconButton icon="add" label="Add item" onPress={addItem} filled />
       </View>
 
-      {searching ? (
-        <View style={[styles.search, { backgroundColor: c.card }]}>
-          <Ionicons name="search" size={18} color={c.textSecondary} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search name, model, store, serial"
-            placeholderTextColor={c.textSecondary}
-            style={[styles.searchInput, { color: c.text }]}
-            autoFocus
-            clearButtonMode="while-editing"
-            returnKeyType="search"
-            autoCorrect={false}
-          />
-        </View>
-      ) : null}
+      <View style={[styles.search, { backgroundColor: c.card }]}>
+        <Ionicons name="search" size={18} color={c.textSecondary} />
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search name, brand, store, serial"
+          placeholderTextColor={c.textSecondary}
+          style={[styles.searchInput, { color: c.text }]}
+          clearButtonMode="while-editing"
+          returnKeyType="search"
+          autoCorrect={false}
+          accessibilityLabel="Search items"
+        />
+        {query ? (
+          <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityRole="button" accessibilityLabel="Clear search">
+            <Ionicons name="close-circle" size={18} color={c.textTertiary} />
+          </Pressable>
+        ) : null}
+      </View>
 
       {browsing ? (
         <>
@@ -311,88 +311,78 @@ export default function ItemsScreen() {
             </>
           ) : null}
 
-          {/* Categories as photo tiles, once there are enough items to browse */}
-          {owned.length >= COLLECTIONS_MIN || category ? (
-            <>
-              <SectionHeading
-                title="Collections"
-                action={category ? 'Show all' : undefined}
-                onAction={category ? () => setCategory(null) : undefined}
-              />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
-                {usedCategories.map((cat) => {
-                  const count = owned.filter((i) => i.category === cat.id).length;
-                  const selected = category === cat.id;
-                  return (
-                    <Pressable
-                      key={cat.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${cat.label}, ${count} items`}
-                      accessibilityState={{ selected }}
-                      onPress={() => {
-                        tap();
-                        setCategory(selected ? null : cat.id);
-                      }}
-                      style={({ pressed }) => [
-                        styles.tile,
-                        { borderColor: selected ? c.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] },
-                      ]}>
-                      <Image source={CATEGORY_PHOTOS[cat.id]} style={StyleSheet.absoluteFill} contentFit="cover" />
-                      <LinearGradient
-                        colors={OnPhoto.scrim}
-                        locations={[0.3, 0.6, 1]}
-                        style={StyleSheet.absoluteFill}
-                      />
-                      <View style={styles.tileText}>
-                        <AppText variant="headline" color={OnPhoto.text} numberOfLines={1}>
-                          {cat.label}
-                        </AppText>
-                        <AppText variant="caption" color={OnPhoto.textSecondary}>
-                          {count} item{count === 1 ? '' : 's'}
-                        </AppText>
-                      </View>
-                      {selected ? (
-                        <View style={styles.tileCheck}>
-                          <Ionicons name="checkmark" size={14} color="#0B0B0C" />
-                        </View>
-                      ) : null}
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </>
-          ) : null}
         </>
       ) : null}
 
       <SectionHeading
-        title={q ? 'Results' : use === 'sold' ? 'Sold' : category ? categoryInfo(category).label : 'Everything'}
+        title={q ? `${visible.length} result${visible.length === 1 ? '' : 's'}` : use === 'sold' ? 'Sold' : 'Everything'}
+        action={grouped ? 'Show as list' : 'Group by category'}
+        onAction={() => updateSettings({ groupByCategory: !grouped })}
       />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip label="All" selected={use === null} onPress={() => setUse(null)} />
-        <Chip label="Personal" selected={use === 'personal'} onPress={() => setUse('personal')} />
-        <Chip label="Work" selected={use === 'work'} onPress={() => setUse('work')} />
+        <Chip label="Personal" selected={use === 'personal'} onPress={() => setUse(use === 'personal' ? null : 'personal')} />
+        <Chip label="Work" selected={use === 'work'} onPress={() => setUse(use === 'work' ? null : 'work')} />
         {soldCount > 0 ? (
-          <Chip label={`Sold (${soldCount})`} selected={use === 'sold'} onPress={() => setUse('sold')} />
+          <Chip label={`Sold (${soldCount})`} selected={use === 'sold'} onPress={() => setUse(use === 'sold' ? null : 'sold')} />
         ) : null}
       </ScrollView>
+      {usedCategories.length > 1 || category ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chips, { marginBottom: Spacing.md }]}>
+          {usedCategories.map((cat) => (
+            <Chip
+              key={cat.id}
+              label={`${cat.label} ${counts.get(cat.id) ?? 0}`}
+              selected={category === cat.id}
+              onPress={() => setCategory(category === cat.id ? null : cat.id)}
+            />
+          ))}
+        </ScrollView>
+      ) : null}
     </View>
   );
 
   return (
     <SafeAreaView edges={['top']} style={[styles.flex, { backgroundColor: c.background }]}>
-      <FlatList
-        data={visible}
+      <SectionList
+        sections={sections}
         keyExtractor={(i) => i.id}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        stickySectionHeadersEnabled={false}
         contentContainerStyle={{ paddingBottom: 120 }}
         ListHeaderComponent={header}
         ItemSeparatorComponent={() => <View style={[styles.separator, { backgroundColor: c.separator }]} />}
         ListEmptyComponent={
           <AppText color={c.textSecondary} style={{ textAlign: 'center', marginTop: Spacing.xxl }}>
-            Nothing here yet.
+            {q || category || use ? 'Nothing matches. Try another search or filter.' : 'Nothing here yet.'}
           </AppText>
+        }
+        renderSectionHeader={({ section }) =>
+          section.category ? (
+            <Pressable
+              onPress={() => toggleSection(section.category!)}
+              accessibilityRole="button"
+              accessibilityState={{ expanded: !collapsed.has(section.category) }}
+              accessibilityLabel={`${section.label}, ${section.count} items`}
+              style={[styles.groupHead, { borderBottomColor: c.separator }]}>
+              <View style={[styles.groupIcon, { backgroundColor: c.card }]}>
+                <Ionicons name={categoryInfo(section.category).icon} size={16} color={c.ink} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppText variant="headline">{section.label}</AppText>
+                <AppText variant="caption" color={c.textSecondary}>
+                  {section.count} item{section.count === 1 ? '' : 's'}
+                  {section.worth > 0 ? ` · worth ${formatMoney(section.worth, region, { cents: false })}` : ''}
+                </AppText>
+              </View>
+              <Ionicons
+                name={collapsed.has(section.category) ? 'chevron-forward' : 'chevron-down'}
+                size={18}
+                color={c.textTertiary}
+              />
+            </Pressable>
+          ) : null
         }
         renderItem={({ item }) => (
           <View style={{ paddingHorizontal: Spacing.xl }}>
@@ -438,7 +428,7 @@ const styles = StyleSheet.create({
     height: 46,
     borderRadius: 999,
   },
-  searchInput: { flex: 1, fontSize: 17, height: 46 },
+  searchInput: { flex: 1, fontSize: 17, height: 46, outlineWidth: 0 },
   hero: {
     marginHorizontal: Spacing.lg,
     height: 360,
@@ -497,28 +487,17 @@ const styles = StyleSheet.create({
   birthdaysHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   birthdayRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   shelf: { gap: Spacing.md, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xxl },
-  tile: {
-    width: 150,
-    height: 190,
-    borderRadius: Radius.xl,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-    borderWidth: 2,
-  },
-  tileText: { padding: Spacing.md, gap: 1 },
-  tileCheck: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   chips: { gap: Spacing.sm, paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
+  groupHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  groupIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   separator: { height: StyleSheet.hairlineWidth, marginLeft: Spacing.xl + 80 + Spacing.lg },
   emptyWrap: { flex: 1, justifyContent: 'flex-end', padding: Spacing.xl + 4, gap: Spacing.md, paddingBottom: 140 },
   emptyButton: {

@@ -97,4 +97,6 @@ export type Settings = {
   birthdaysEnabled: boolean;
   /** The "turn on reminders" card on the Items screen was dismissed. */
   remindersPromptDismissed: boolean;
+  /** Show the item list grouped by category, with sections that collapse. Per device. */
+  groupByCategory: boolean;
 };

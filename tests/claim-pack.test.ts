@@ -25,6 +25,7 @@ const settings: Settings = {
   birthdaysEnabled: true,
   reminderDays: [30, 7],
   remindersPromptDismissed: false,
+  groupByCategory: false,
 };
 
 test('summary totals and gap warnings', () => {
