@@ -66,6 +66,7 @@ export default function ItemsScreen() {
       (r): r is { item: (typeof owned)[number]; plan: NonNullable<ReturnType<typeof sellPlan>> } =>
         !!r.plan && (r.plan.status === 'window' || r.plan.status === 'late'),
     );
+  const sellStatuses = new Map(readyToSell.map((r) => [r.item.id, r.plan.status]));
   const usedCategories = CATEGORIES.filter((cat) => owned.some((i) => i.category === cat.id));
 
   const q = query.trim().toLowerCase();
@@ -395,7 +396,7 @@ export default function ItemsScreen() {
         }
         renderItem={({ item }) => (
           <View style={{ paddingHorizontal: Spacing.xl }}>
-            <ItemRow item={item} region={region} onPress={() => open(item.id)} />
+            <ItemRow item={item} region={region} sellStatus={sellStatuses.get(item.id)} onPress={() => open(item.id)} />
           </View>
         )}
       />

@@ -9,6 +9,7 @@ import { ageOf } from '@/lib/birthdays';
 import { formatDate, formatMoney } from '@/lib/format';
 import { itemPhoto } from '@/lib/photos';
 import type { Item, TaxRegion } from '@/lib/types';
+import type { SellStatus } from '@/lib/upgrade';
 import { currentValue } from '@/lib/valuation';
 import { warrantyStatus, type WarrantyState } from '@/lib/warranty';
 
@@ -39,6 +40,20 @@ export function WarrantyPill({ item }: { item: Item }) {
   );
 }
 
+/** Shown on items in (or past) their best time to sell. */
+function SellPill({ late }: { late: boolean }) {
+  const c = useColors();
+  const fg = late ? c.orange : c.green;
+  return (
+    <View style={[styles.pill, { backgroundColor: late ? c.orangeSoft : c.greenSoft }]}>
+      <Ionicons name="pricetag" size={11} color={fg} />
+      <AppText variant="caption" color={fg} style={{ fontWeight: '600' }}>
+        {late ? 'Sell soon' : 'Good time to sell'}
+      </AppText>
+    </View>
+  );
+}
+
 /** The item's photo, or a photo for its category, cropped to a rounded square. */
 export function ItemThumb({
   item,
@@ -61,7 +76,18 @@ export function ItemThumb({
 }
 
 /** List row: photo on the left, name, price and status on the right. */
-export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegion; onPress: () => void }) {
+export function ItemRow({
+  item,
+  region,
+  sellStatus,
+  onPress,
+}: {
+  item: Item;
+  region: TaxRegion;
+  /** From the sell planner; only "window" and "late" show a pill. */
+  sellStatus?: SellStatus;
+  onPress: () => void;
+}) {
   const c = useColors();
   const worth = item.sold ? null : (currentValue(item)?.amount ?? null);
   return (
@@ -81,6 +107,7 @@ export function ItemRow({ item, region, onPress }: { item: Item; region: TaxRegi
             .join(' · ')}
         </AppText>
         <View style={styles.rowBadges}>
+          {sellStatus === 'window' || sellStatus === 'late' ? <SellPill late={sellStatus === 'late'} /> : null}
           {item.sold ? null : <WarrantyPill item={item} />}
           {item.use === 'work' ? (
             <View style={[styles.pill, { backgroundColor: c.card }]}>
