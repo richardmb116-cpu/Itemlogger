@@ -47,7 +47,6 @@ export default function ItemDetailScreen() {
   const birthdayToday = !item.sold && birthday.daysUntil === 0;
   const status = warrantyStatus(item);
   const col = warrantyColors(status.state, c);
-  const taxYear = taxYearFor(item.purchaseDate, region);
   const nextReminder = settings.remindersEnabled ? planReminders([item], settings.reminderDays)[0] : undefined;
   const edit = () => router.push({ pathname: '/item/edit', params: { id: item.id } });
   const sell = () => router.push({ pathname: '/item/sell', params: { id: item.id } });
@@ -136,8 +135,6 @@ export default function ItemDetailScreen() {
         {/* Outlined info pills, like the storage picker */}
         <View style={styles.pills}>
           <InfoPill icon="hourglass-outline" label={age.label} />
-          <InfoPill icon="calendar-outline" label={formatDate(item.purchaseDate, region)} />
-          <InfoPill icon="document-text-outline" label={taxYear.label} />
           <InfoPill icon={item.use === 'work' ? 'briefcase-outline' : 'home-outline'} label={item.use === 'work' ? 'Work' : 'Personal'} />
         </View>
 
@@ -171,7 +168,7 @@ export default function ItemDetailScreen() {
                 <AppText variant="footnote" color={c.onInk} style={{ opacity: value.stale ? 1 : 0.7 }}>
                   {value.source === 'checked'
                     ? `Your price from real listings, checked ${checkedAgo(value.ageDays ?? 0)}${value.stale ? '. Check again?' : ''}`
-                    : `${lostShare != null ? `Down ${Math.round(lostShare * 100)}% since you bought it · ` : ''}estimate, likely ${formatMoney(
+                    : `${lostShare == null ? '' : lostShare < 0.01 ? 'Holding its value · ' : `Down ${Math.round(lostShare * 100)}% since you bought it · `}estimate, likely ${formatMoney(
                         value.valuation!.low,
                         region,
                       )}–${formatMoney(value.valuation!.high, region)}`}
@@ -250,7 +247,7 @@ export default function ItemDetailScreen() {
               <>
                 <Row
                   label={`Est. deduction, ${taxYearByEnd(estimateYear, region).label}`}
-                  value={formatMoney(estimate, region, { cents: true })}
+                  value={formatMoney(estimate, region, { cents: false })}
                 />
                 <Row
                   label="For your accountant"
@@ -308,8 +305,7 @@ export default function ItemDetailScreen() {
           )}
           <Row label="Model" value={item.model || '—'} />
           <Row label="Store" value={item.store || '—'} />
-          <Row label="Serial number" value={item.serial || '—'} />
-          <Row label="Category" value={cat.label} last />
+          <Row label="Serial number" value={item.serial || '—'} last />
         </Section>
 
         <Section title="Receipt">
@@ -343,14 +339,10 @@ export default function ItemDetailScreen() {
         ]}>
         <View style={{ flex: 1 }}>
           <AppText variant="footnote" color={c.textSecondary}>
-            {item.sold ? 'Sold for' : value ? `Worth about · paid ${formatMoney(item.price, region)}` : 'Paid'}
+            {item.sold ? 'Sold for' : 'Paid'}
           </AppText>
           <AppText variant="title2" style={{ fontVariant: ['tabular-nums'] }}>
-            {item.sold
-              ? formatMoney(item.sold.price, region)
-              : value
-                ? formatMoney(value.amount, region)
-                : formatMoney(item.price, region, { cents: true })}
+            {formatMoney(item.sold ? item.sold.price : item.price, region, { cents: false })}
           </AppText>
         </View>
         <PillButton label="Edit" size="lg" secondary onPress={edit} />

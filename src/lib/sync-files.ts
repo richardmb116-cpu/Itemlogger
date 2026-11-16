@@ -1,7 +1,7 @@
 import { Directory, File, Paths } from 'expo-file-system';
 
 import { kv } from './storage';
-import { PHOTO_BUCKET, supabase } from './supabase';
+import { getSupabase, PHOTO_BUCKET } from './supabase';
 import { isBundled } from './photos';
 
 /**
@@ -25,6 +25,7 @@ function remember(local: string, remote: string) {
 
 /** The URI to store on the server for a local photo, uploading it first if needed. */
 export async function toRemoteUri(uri: string | null, userId: string): Promise<string | null> {
+  const supabase = await getSupabase();
   if (!uri || isBundled(uri) || uri.startsWith(REMOTE) || !supabase) return uri;
   const known = readMap()[uri];
   if (known) return REMOTE + known;
@@ -43,6 +44,7 @@ export async function toRemoteUri(uri: string | null, userId: string): Promise<s
 
 /** A local file for a photo stored on the server, downloading it if this device doesn't have it yet. */
 export async function toLocalUri(uri: string | null): Promise<string | null> {
+  const supabase = await getSupabase();
   if (!uri || !uri.startsWith(REMOTE) || !supabase) return uri;
   const path = uri.slice(REMOTE.length);
   const map = readMap();

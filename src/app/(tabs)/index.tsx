@@ -24,6 +24,9 @@ import { warrantyStatus } from '@/lib/warranty';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
+/** Below this many items, browsing by category adds clutter rather than help. */
+const COLLECTIONS_MIN = 12;
+
 function greeting(now = new Date()): string {
   const h = now.getHours();
   return h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
@@ -59,8 +62,9 @@ export default function ItemsScreen() {
   const birthdays = upcomingBirthdays(owned, 7);
   const readyToSell = owned
     .map((item) => ({ item, plan: sellPlan(item, region, settings.upgradeStyle) }))
-    .filter((r): r is { item: (typeof owned)[number]; plan: NonNullable<ReturnType<typeof sellPlan>> } =>
-      !!r.plan && (r.plan.status === 'window' || r.plan.status === 'late'),
+    .filter(
+      (r): r is { item: (typeof owned)[number]; plan: NonNullable<ReturnType<typeof sellPlan>> } =>
+        !!r.plan && (r.plan.status === 'window' || r.plan.status === 'late'),
     );
   const usedCategories = CATEGORIES.filter((cat) => owned.some((i) => i.category === cat.id));
 
@@ -86,7 +90,11 @@ export default function ItemsScreen() {
   };
   const open = (id: string) => router.push(`/item/${id}`);
   const browsing = !q;
-  const today = new Date().toLocaleDateString(currencyFor(region).locale, { weekday: 'long', day: 'numeric', month: 'long' });
+  const today = new Date().toLocaleDateString(currencyFor(region).locale, {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
 
   if (items.length === 0) {
     return (
@@ -171,6 +179,19 @@ export default function ItemsScreen() {
                   Worth today
                 </AppText>
               </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Claim pack"
+                onPress={() => {
+                  tap();
+                  router.push('/claim');
+                }}
+                style={({ pressed }) => [styles.glassChip, { opacity: pressed ? 0.7 : 1 }]}>
+                <Ionicons name="document-text" size={12} color={OnPhoto.text} />
+                <AppText variant="eyebrow" color={OnPhoto.text} style={{ fontSize: 11 }}>
+                  Claim pack
+                </AppText>
+              </Pressable>
             </View>
             <View style={styles.heroBottom}>
               <AppText variant="hero" color={OnPhoto.text} style={{ fontVariant: ['tabular-nums'] }}>
@@ -185,13 +206,6 @@ export default function ItemsScreen() {
                 <HeroStat icon="briefcase" value={workCount} label="work" />
               </View>
             </View>
-          </View>
-
-          {/* Quick actions */}
-          <View style={styles.actions}>
-            <QuickAction icon="camera" label="Add item" onPress={addItem} />
-            <QuickAction icon="document-text" label="Claim pack" onPress={() => router.push('/claim')} />
-            <QuickAction icon="receipt" label="Tax" onPress={() => router.push('/tax')} />
           </View>
 
           {showReminderPrompt ? (
@@ -268,14 +282,23 @@ export default function ItemsScreen() {
             </View>
           ) : null}
 
-          {/* Ready to upgrade: items in or past their best time to sell */}
-          {readyToSell.length > 0 && !category && !use ? (
+          {/* Needs attention: warranties about to end, then things worth selling now */}
+          {(expiring.length > 0 || readyToSell.length > 0) && !category && !use ? (
             <>
-              <SectionHeading title="Ready to upgrade" />
+              <SectionHeading title="Needs attention" />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
+                {expiring.map((item) => (
+                  <ItemCard
+                    key={`w-${item.id}`}
+                    item={item}
+                    detail={statuses.get(item.id)?.label ?? ''}
+                    action="Review warranty"
+                    onPress={() => open(item.id)}
+                  />
+                ))}
                 {readyToSell.map(({ item, plan }) => (
                   <ItemCard
-                    key={item.id}
+                    key={`s-${item.id}`}
                     item={item}
                     detail={`${plan.status === 'window' ? 'Good time to sell' : 'Past its best time'} · ~${formatMoney(plan.nowValue, region, { cents: false })}`}
                     action="See value"
@@ -286,71 +309,63 @@ export default function ItemsScreen() {
             </>
           ) : null}
 
-          {/* Expiring shelf */}
-          {expiring.length > 0 && !category && !use ? (
+          {/* Categories as photo tiles, once there are enough items to browse */}
+          {owned.length >= COLLECTIONS_MIN || category ? (
             <>
-              <SectionHeading title="Expiring soon" />
+              <SectionHeading
+                title="Collections"
+                action={category ? 'Show all' : undefined}
+                onAction={category ? () => setCategory(null) : undefined}
+              />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
-                {expiring.map((item) => (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    detail={statuses.get(item.id)?.label ?? ''}
-                    action="Review"
-                    onPress={() => open(item.id)}
-                  />
-                ))}
+                {usedCategories.map((cat) => {
+                  const count = owned.filter((i) => i.category === cat.id).length;
+                  const selected = category === cat.id;
+                  return (
+                    <Pressable
+                      key={cat.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${cat.label}, ${count} items`}
+                      accessibilityState={{ selected }}
+                      onPress={() => {
+                        tap();
+                        setCategory(selected ? null : cat.id);
+                      }}
+                      style={({ pressed }) => [
+                        styles.tile,
+                        { borderColor: selected ? c.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] },
+                      ]}>
+                      <Image source={CATEGORY_PHOTOS[cat.id]} style={StyleSheet.absoluteFill} contentFit="cover" />
+                      <LinearGradient
+                        colors={OnPhoto.scrim}
+                        locations={[0.3, 0.6, 1]}
+                        style={StyleSheet.absoluteFill}
+                      />
+                      <View style={styles.tileText}>
+                        <AppText variant="headline" color={OnPhoto.text} numberOfLines={1}>
+                          {cat.label}
+                        </AppText>
+                        <AppText variant="caption" color={OnPhoto.textSecondary}>
+                          {count} item{count === 1 ? '' : 's'}
+                        </AppText>
+                      </View>
+                      {selected ? (
+                        <View style={styles.tileCheck}>
+                          <Ionicons name="checkmark" size={14} color="#0B0B0C" />
+                        </View>
+                      ) : null}
+                    </Pressable>
+                  );
+                })}
               </ScrollView>
             </>
           ) : null}
-
-          {/* Categories as photo tiles */}
-          <SectionHeading
-            title="Collections"
-            action={category ? 'Show all' : undefined}
-            onAction={category ? () => setCategory(null) : undefined}
-          />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
-            {usedCategories.map((cat) => {
-              const count = owned.filter((i) => i.category === cat.id).length;
-              const selected = category === cat.id;
-              return (
-                <Pressable
-                  key={cat.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${cat.label}, ${count} items`}
-                  accessibilityState={{ selected }}
-                  onPress={() => {
-                    tap();
-                    setCategory(selected ? null : cat.id);
-                  }}
-                  style={({ pressed }) => [
-                    styles.tile,
-                    { borderColor: selected ? c.ink : 'transparent', transform: [{ scale: pressed ? 0.97 : 1 }] },
-                  ]}>
-                  <Image source={CATEGORY_PHOTOS[cat.id]} style={StyleSheet.absoluteFill} contentFit="cover" />
-                  <LinearGradient colors={OnPhoto.scrim} locations={[0.3, 0.6, 1]} style={StyleSheet.absoluteFill} />
-                  <View style={styles.tileText}>
-                    <AppText variant="headline" color={OnPhoto.text} numberOfLines={1}>
-                      {cat.label}
-                    </AppText>
-                    <AppText variant="caption" color={OnPhoto.textSecondary}>
-                      {count} item{count === 1 ? '' : 's'}
-                    </AppText>
-                  </View>
-                  {selected ? (
-                    <View style={styles.tileCheck}>
-                      <Ionicons name="checkmark" size={14} color="#0B0B0C" />
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
         </>
       ) : null}
 
-      <SectionHeading title={q ? 'Results' : use === 'sold' ? 'Sold' : category ? categoryInfo(category).label : 'Everything'} />
+      <SectionHeading
+        title={q ? 'Results' : use === 'sold' ? 'Sold' : category ? categoryInfo(category).label : 'Everything'}
+      />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip label="All" selected={use === null} onPress={() => setUse(null)} />
         <Chip label="Personal" selected={use === 'personal'} onPress={() => setUse('personal')} />
@@ -401,26 +416,6 @@ function HeroStat({ icon, value, label }: { icon: IconName; value: number; label
   );
 }
 
-function QuickAction({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
-  const c = useColors();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={() => {
-        tap();
-        onPress();
-      }}
-      style={({ pressed }) => [styles.action, { backgroundColor: c.card, transform: [{ scale: pressed ? 0.96 : 1 }] }]}>
-      <View style={[styles.actionIcon, { backgroundColor: c.ink }]}>
-        <Ionicons name={icon} size={18} color={c.onInk} />
-      </View>
-      <AppText variant="subhead" style={{ fontWeight: '600' }}>
-        {label}
-      </AppText>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   topBar: {
@@ -445,13 +440,14 @@ const styles = StyleSheet.create({
   hero: {
     marginHorizontal: Spacing.lg,
     height: 360,
+    marginBottom: Spacing.xl,
     borderRadius: Radius.xxl,
     borderCurve: 'continuous',
     overflow: 'hidden',
     justifyContent: 'space-between',
     backgroundColor: '#222',
   },
-  heroTop: { padding: Spacing.lg, flexDirection: 'row' },
+  heroTop: { padding: Spacing.lg, flexDirection: 'row', justifyContent: 'space-between' },
   heroBottom: { padding: Spacing.xl, gap: 2 },
   heroStats: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: Spacing.lg },
   heroStat: {
@@ -476,22 +472,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: OnPhoto.glassBorder,
   },
-  actions: { flexDirection: 'row', gap: Spacing.sm, paddingHorizontal: Spacing.lg, marginTop: Spacing.md, marginBottom: Spacing.xxl },
-  action: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: Spacing.md,
-    padding: Spacing.lg,
-    borderRadius: Radius.xl,
-    borderCurve: 'continuous',
-  },
-  actionIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   prompt: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.md,
     marginHorizontal: Spacing.lg,
-    marginTop: -Spacing.md,
     marginBottom: Spacing.xxl,
     padding: Spacing.xl,
     borderRadius: Radius.xxl,
@@ -501,7 +486,6 @@ const styles = StyleSheet.create({
   promptButton: { paddingHorizontal: 18, paddingVertical: 9, borderRadius: 999 },
   birthdays: {
     marginHorizontal: Spacing.lg,
-    marginTop: -Spacing.md,
     marginBottom: Spacing.xxl,
     padding: Spacing.lg,
     gap: Spacing.md,

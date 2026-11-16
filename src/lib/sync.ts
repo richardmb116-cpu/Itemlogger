@@ -1,5 +1,7 @@
 import { readCursor, readOutbox, setSettingsChangedAt, settingsChangedAt, writeCursor, writeOutbox } from './outbox';
-import { supabase } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+import { getSupabase } from './supabase';
 import { toLocalUri, toRemoteUri } from './sync-files';
 import { clearPushed, mergeRemote, pendingRows, syncedSettings, type RemoteItemRow, type SyncedSettings } from './sync-merge';
 import type { Item, Settings } from './types';
@@ -29,7 +31,10 @@ export function syncNow(host: SyncHost): Promise<void> {
   return running;
 }
 
+let supabase: SupabaseClient | null = null;
+
 async function run(host: SyncHost) {
+  supabase = await getSupabase();
   if (!supabase) return;
   const { data: auth } = await supabase.auth.getSession();
   const userId = auth.session?.user.id;

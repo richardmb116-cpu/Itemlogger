@@ -14,9 +14,9 @@ import {
   type NativeSyntheticEvent,
   type ScrollViewInstance,
 } from 'react-native';
-import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FadeIn } from '@/components/fade-in';
 import { AppText, tap } from '@/components/ui';
 import { OnPhoto, Spacing } from '@/constants/theme';
 import { WELCOME_PHOTOS } from '@/lib/photos';
@@ -109,9 +109,7 @@ export default function WelcomeScreen() {
               style={StyleSheet.absoluteFill}
             />
             {page === i ? (
-              <Animated.View
-                entering={FadeInDown.duration(600)}
-                style={[styles.copy, { paddingBottom: insets.bottom + 132 }]}>
+              <FadeIn style={[styles.copy, { paddingBottom: insets.bottom + 132 }]}>
                 <AppText variant="eyebrow" color={OnPhoto.textSecondary}>
                   {p.eyebrow}
                 </AppText>
@@ -121,7 +119,7 @@ export default function WelcomeScreen() {
                 <AppText variant="body" color={OnPhoto.textSecondary} style={styles.body}>
                   {p.body}
                 </AppText>
-              </Animated.View>
+              </FadeIn>
             ) : null}
           </View>
         ))}
@@ -131,7 +129,7 @@ export default function WelcomeScreen() {
           <Image source={WELCOME_PHOTOS.home} style={StyleSheet.absoluteFill} contentFit="cover" blurRadius={24} />
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.62)' }]} />
           {page === last ? (
-            <Animated.View entering={FadeInDown.duration(600)} style={[styles.setup, { paddingTop: insets.top + 72, paddingBottom: insets.bottom + 24 }]}>
+            <FadeIn style={[styles.setup, { paddingTop: insets.top + 72, paddingBottom: insets.bottom + 24 }]}>
               <View style={{ gap: Spacing.sm }}>
                 <AppText variant="eyebrow" color={OnPhoto.textSecondary}>
                   Set up
@@ -189,7 +187,7 @@ export default function WelcomeScreen() {
                   </AppText>
                 </Pressable>
               </View>
-            </Animated.View>
+            </FadeIn>
           ) : null}
         </View>
       </ScrollView>

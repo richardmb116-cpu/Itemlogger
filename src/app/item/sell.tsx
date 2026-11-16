@@ -68,6 +68,7 @@ export default function SellScreen() {
   const [bodyHeight, setBodyHeight] = useState(160);
 
   const [repair, setRepair] = useState('');
+  const [showWorking, setShowWorking] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   useEffect(() => {
     if (!notice) return;
@@ -287,23 +288,33 @@ export default function SellScreen() {
         </Section>
 
         {valuation && current?.source !== 'checked' ? (
-          <Section
-            title="How the estimate is worked out"
-            footer={`${profile.note}. ${EVIDENCE_FOOTER[profile.evidence]} Not live listings.`}>
-            <Row label="Resale curve" value={profile.label} />
-            <Row label="Age" value={formatAge(valuation.ageYears)} />
-            <Row label="Condition" value={conditionInfo(item.condition).label} />
+          <Section footer={showWorking ? `${profile.note}. ${EVIDENCE_FOOTER[profile.evidence]} Not live listings.` : undefined}>
             <Row
-              label="Warranty"
-              value={
-                valuation.warrantyBonus
-                  ? `Still covered (+${Math.round(warrantyBonusAt(item, valuation.ageYears) * 100)}%)`
-                  : profile.warrantyTransferable
-                    ? 'Not covered'
-                    : 'Doesn’t pass to a buyer'
-              }
-              last
+              label="How the estimate is worked out"
+              icon="calculator-outline"
+              value={showWorking ? 'Hide' : undefined}
+              chevron={!showWorking}
+              last={!showWorking}
+              onPress={() => setShowWorking((v) => !v)}
             />
+            {showWorking ? (
+              <>
+                <Row label="Resale curve" value={profile.label} />
+                <Row label="Age" value={formatAge(valuation.ageYears)} />
+                <Row label="Condition" value={conditionInfo(item.condition).label} />
+                <Row
+                  label="Warranty"
+                  value={
+                    valuation.warrantyBonus
+                      ? `Still covered (+${Math.round(warrantyBonusAt(item, valuation.ageYears) * 100)}%)`
+                      : profile.warrantyTransferable
+                        ? 'Not covered'
+                        : 'Doesn’t pass to a buyer'
+                  }
+                  last
+                />
+              </>
+            ) : null}
           </Section>
         ) : null}
 
@@ -353,7 +364,8 @@ export default function SellScreen() {
 
         <View style={styles.actions}>
           <PrimaryButton label="Share listing" icon="share-outline" onPress={share} />
-          <PrimaryButton label="Copy text" icon="copy-outline" onPress={copy} secondary />
+          {/* The iPhone share sheet already has Copy; the browser may not have a share sheet. */}
+          {Platform.OS === 'web' ? <PrimaryButton label="Copy text" icon="copy-outline" onPress={copy} secondary /> : null}
           {notice ? (
             <AppText variant="footnote" color={c.green} style={{ textAlign: 'center' }} accessibilityLiveRegion="polite">
               {notice}

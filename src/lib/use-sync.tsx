@@ -4,7 +4,7 @@ import { AppState } from 'react-native';
 
 import { resetSyncState } from './outbox';
 import { useStore } from './store';
-import { supabase, syncConfigured } from './supabase';
+import { getSupabase, syncConfigured } from './supabase';
 import { syncNow } from './sync';
 
 type SyncStatus = 'off' | 'signed-out' | 'syncing' | 'synced' | 'error';
@@ -40,7 +40,7 @@ export function SyncProvider({ children }: { children: ReactNode }) {
   }, [syncHost]);
 
   const sync = useCallback(async () => {
-    if (!supabase) return;
+    if (!syncConfigured) return;
     setBusy(true);
     try {
       await syncNow(hostRef.current);
@@ -55,10 +55,18 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   // Follow the signed-in account.
   useEffect(() => {
-    if (!supabase) return;
-    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
-    return () => data.subscription.unsubscribe();
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+    void getSupabase().then((sb) => {
+      if (!sb || cancelled) return;
+      void sb.auth.getSession().then(({ data }) => setSession(data.session));
+      const { data } = sb.auth.onAuthStateChange((_event, next) => setSession(next));
+      unsubscribe = () => data.subscription.unsubscribe();
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, []);
 
   const signedIn = !!session;
@@ -96,16 +104,19 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       error,
       sync,
       sendCode: async (email) => {
+        const supabase = await getSupabase();
         if (!supabase) return 'Sync isn’t set up in this build.';
         const { error: e } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
         return e ? e.message : null;
       },
       verifyCode: async (email, code) => {
+        const supabase = await getSupabase();
         if (!supabase) return 'Sync isn’t set up in this build.';
         const { error: e } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'email' });
         return e ? e.message : null;
       },
       signOut: async () => {
+        const supabase = await getSupabase();
         if (!supabase) return;
         await supabase.auth.signOut();
         // Items stay on this device; the next account starts its own sync from scratch.

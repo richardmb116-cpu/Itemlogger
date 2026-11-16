@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -74,15 +75,15 @@ export function adviceCopy(plan: SellPlan, region: TaxRegion, today = new Date()
   }
 }
 
-const STYLE_OPTIONS: { value: UpgradeStyle; label: string }[] = [
-  { value: 'value', label: 'Full value' },
-  { value: 'balanced', label: 'Balanced' },
-  { value: 'latest', label: 'Stay current' },
-];
+const STYLE_LABEL: Record<UpgradeStyle, string> = {
+  value: 'getting full value from what you own',
+  balanced: 'a balance of value and keeping up to date',
+  latest: 'staying current with new models',
+};
 
 export function SellAdvice({ plan, item, region }: { plan: SellPlan; item: Item; region: TaxRegion }) {
   const c = useColors();
-  const { settings, updateSettings } = useStore();
+  const { settings } = useStore();
   const [mode, setMode] = useState<'value' | 'costs'>('value');
   const copy = adviceCopy(plan, region);
   const color = statusColor(plan, c);
@@ -103,20 +104,7 @@ export function SellAdvice({ plan, item, region }: { plan: SellPlan; item: Item;
       </AppText>
 
       {timed ? (
-        <View style={{ marginTop: Spacing.md, gap: Spacing.xs }}>
-          <AppText variant="caption" color={c.textSecondary}>
-            How much do you care about having the latest?
-          </AppText>
-          <Segmented
-            value={settings.upgradeStyle}
-            onChange={(upgradeStyle) => updateSettings({ upgradeStyle })}
-            options={STYLE_OPTIONS}
-          />
-        </View>
-      ) : null}
-
-      {timed ? (
-        <View style={{ marginTop: Spacing.sm }}>
+        <View style={{ marginTop: Spacing.md }}>
           <Segmented
             value={mode}
             onChange={setMode}
@@ -153,6 +141,20 @@ export function SellAdvice({ plan, item, region }: { plan: SellPlan; item: Item;
           value={plan.calibrated ? 'Yes' : (brand ?? EVIDENCE_LABEL[plan.profile.evidence])}
         />
       </View>
+
+      {timed ? (
+        <AppText
+          variant="footnote"
+          color={c.textSecondary}
+          onPress={() => router.navigate('/settings')}
+          suppressHighlighting
+          style={{ lineHeight: 18 }}>
+          Timed for {STYLE_LABEL[settings.upgradeStyle]}.{' '}
+          <AppText variant="footnote" color={c.accent}>
+            Change in Settings
+          </AppText>
+        </AppText>
+      ) : null}
 
       {plan.tip ? (
         <View style={[styles.tip, { backgroundColor: c.raised }]}>

@@ -102,14 +102,16 @@ export function valueItem(item: ValueItem, today = new Date()): Valuation | null
   if (raw <= 0) {
     return { estimate: 0, low: 0, high: 0, lost: item.price, lostShare: 1, inAYear: 0, ageYears, warrantyBonus, evidence: p.evidence };
   }
-  const estimate = roundPrice(raw);
+  // Rounding must not push an estimate above what was paid (a $3,299 laptop isn't "worth $3,300").
+  const capped = (v: number) => Math.min(roundPrice(v), Math.floor(item.price!));
+  const estimate = capped(raw);
   const inAYear = roundPrice(valueAt(item, ageYears + 1));
   const lost = Math.max(0, item.price - estimate);
 
   return {
     estimate,
-    low: roundPrice(raw * (1 - range)),
-    high: roundPrice(Math.min(item.price, raw * (1 + range))),
+    low: capped(raw * (1 - range)),
+    high: capped(raw * (1 + range)),
     lost,
     lostShare: lost / item.price,
     inAYear: Math.min(inAYear, estimate),

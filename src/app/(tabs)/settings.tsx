@@ -75,20 +75,21 @@ export default function SettingsScreen() {
   };
 
   const hour = REMINDER_HOUR > 12 ? `${REMINDER_HOUR - 12} pm` : `${REMINDER_HOUR} am`;
-  const reminderFooter = !remindersSupported
-    ? 'Warranty reminders work in the iPhone app, not in the browser preview.'
+  const birthdayNote = settings.birthdaysEnabled ? ` Birthdays: a note at ${hour} on each purchase anniversary.` : '';
+  const notificationFooter = !remindersSupported
+    ? 'Reminders and birthday notes work in the iPhone app, not in the browser preview.'
     : blocked
       ? 'Notifications are turned off for Vestle in iOS Settings.'
-      : on
-        ? `Reminders arrive at ${hour}. ${scheduled} coming up.`
-        : 'Get a notification before a warranty runs out, while there is still time to claim.';
+      : (on
+          ? `Reminders arrive at ${hour}. ${scheduled} coming up.`
+          : 'Get a notification before a warranty runs out, while there is still time to claim.') + birthdayNote;
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: c.background }}>
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <ScreenTitle eyebrow="Vestle" title="Settings" />
 
-        <SyncSection state={syncState} />
+        {syncState.configured ? <SyncSection state={syncState} /> : null}
 
         <Section
           title="Country"
@@ -126,40 +127,40 @@ export default function SettingsScreen() {
           </Row>
           {dep.showAdvanced ? (
             <>
-          <View style={{ padding: Spacing.md, gap: Spacing.sm }}>
-              <AppText variant="footnote" color={c.textSecondary}>
-                Depreciation method
-              </AppText>
+              <View style={{ padding: Spacing.md, gap: Spacing.sm }}>
+                <AppText variant="footnote" color={c.textSecondary}>
+                  Depreciation method
+                </AppText>
+                {settings.taxRegion === 'AU' ? (
+                  <Segmented
+                    value={dep.auMethod}
+                    onChange={(auMethod) => setDep({ auMethod })}
+                    options={[
+                      { value: 'diminishing', label: 'Diminishing value' },
+                      { value: 'prime', label: 'Prime cost' },
+                    ]}
+                  />
+                ) : (
+                  <Segmented
+                    value={dep.usMethod}
+                    onChange={(usMethod) => setDep({ usMethod })}
+                    options={[
+                      { value: 'section179', label: 'Section 179' },
+                      { value: 'macrs', label: 'MACRS' },
+                    ]}
+                  />
+                )}
+              </View>
               {settings.taxRegion === 'AU' ? (
-                <Segmented
-                  value={dep.auMethod}
-                  onChange={(auMethod) => setDep({ auMethod })}
-                  options={[
-                    { value: 'diminishing', label: 'Diminishing value' },
-                    { value: 'prime', label: 'Prime cost' },
-                  ]}
-                />
-              ) : (
-                <Segmented
-                  value={dep.usMethod}
-                  onChange={(usMethod) => setDep({ usMethod })}
-                  options={[
-                    { value: 'section179', label: 'Section 179' },
-                    { value: 'macrs', label: 'MACRS' },
-                  ]}
-                />
-              )}
-            </View>
-            {settings.taxRegion === 'AU' ? (
-              <Row label="Low-value pool" last>
-                <Switch
-                  value={dep.auLowValuePool}
-                  onValueChange={(auLowValuePool) => setDep({ auLowValuePool })}
-                  trackColor={{ true: c.green, false: c.fill }}
-                  accessibilityLabel="Low-value pool"
-                />
-              </Row>
-            ) : null}
+                <Row label="Low-value pool" last>
+                  <Switch
+                    value={dep.auLowValuePool}
+                    onValueChange={(auLowValuePool) => setDep({ auLowValuePool })}
+                    trackColor={{ true: c.green, false: c.fill }}
+                    accessibilityLabel="Low-value pool"
+                  />
+                </Row>
+              ) : null}
             </>
           ) : null}
         </Section>
@@ -187,8 +188,8 @@ export default function SettingsScreen() {
           </View>
         </Section>
 
-        <Section title="Warranty reminders" footer={reminderFooter}>
-          <Row label="Remind me" icon="notifications-outline" last={!on}>
+        <Section title="Notifications" footer={notificationFooter}>
+          <Row label="Warranty reminders" icon="notifications-outline">
             <Switch
               value={on}
               onValueChange={toggleReminders}
@@ -209,21 +210,18 @@ export default function SettingsScreen() {
                 ))}
               </View>
               {blocked ? (
-                <Row label="Allow notifications" icon="warning-outline" chevron destructive last onPress={openSystemSettings} />
+                <Row
+                  label="Allow notifications"
+                  icon="warning-outline"
+                  chevron
+                  destructive
+                  onPress={openSystemSettings}
+                />
               ) : (
-                <Row label="When" value={reminderSummary(settings.reminderDays)} last />
+                <Row label="When" value={reminderSummary(settings.reminderDays)} />
               )}
             </>
           ) : null}
-        </Section>
-
-        <Section
-          title="Item birthdays"
-          footer={
-            remindersSupported
-              ? `A note at ${hour} on each purchase anniversary, with what the item is worth now.`
-              : 'Item birthday notifications work in the iPhone app, not in the browser preview.'
-          }>
           <Row label="Celebrate birthdays" icon="gift-outline" last>
             <Switch
               value={settings.birthdaysEnabled}
@@ -268,11 +266,22 @@ export default function SettingsScreen() {
               accessibilityLabel="Contents sum insured"
             />
           </Row>
-          <Row label="Create claim pack" icon="document-text-outline" chevron last onPress={() => router.push('/claim')} />
+          <Row
+            label="Create claim pack"
+            icon="document-text-outline"
+            chevron
+            last
+            onPress={() => router.push('/claim')}
+          />
         </Section>
 
-
-        <Section title="Data" footer="Everything is stored on this iPhone only. Backup and sync are coming.">
+        <Section
+          title="Data"
+          footer={
+            syncState.status === 'off' || syncState.status === 'signed-out'
+              ? 'Everything is stored on this device only.'
+              : 'Stored on this device and synced to your account.'
+          }>
           <Row label="Items" value={String(items.length)} />
           <Row label="Add sample items" icon="sparkles-outline" onPress={addSampleItems} />
           <Row
@@ -281,7 +290,12 @@ export default function SettingsScreen() {
             destructive
             last
             onPress={() =>
-              confirm('Delete all items?', 'This removes every item, photo and receipt from this phone.', 'Delete all', deleteAllItems)
+              confirm(
+                'Delete all items?',
+                'This removes every item, photo and receipt from this phone.',
+                'Delete all',
+                deleteAllItems,
+              )
             }
           />
         </Section>
@@ -305,7 +319,13 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 17, paddingVertical: 0, textAlign: 'right', minWidth: 120 },
-  leads: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm, paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+  leads: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
 });
 
 function SyncSection({ state }: { state: ReturnType<typeof useSync> }) {
@@ -350,7 +370,12 @@ function SyncSection({ state }: { state: ReturnType<typeof useSync> }) {
         destructive
         last
         onPress={() =>
-          confirm('Sign out?', 'Your items stay on this device. Sign in again any time to sync.', 'Sign out', () => void signOut())
+          confirm(
+            'Sign out?',
+            'Your items stay on this device. Sign in again any time to sync.',
+            'Sign out',
+            () => void signOut(),
+          )
         }
       />
     </Section>
