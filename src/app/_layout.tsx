@@ -1,8 +1,10 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Platform, useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { kvReady, onSaveFailure } from '@/lib/storage';
 import { StoreProvider } from '@/lib/store';
 import { useReminderSync } from '@/lib/use-reminders';
 import { SyncProvider } from '@/lib/use-sync';
@@ -12,8 +14,26 @@ function ReminderSync() {
   return null;
 }
 
+/** Warn, rather than lose changes silently, when storage refuses a save. */
+function SaveFailureAlert() {
+  useEffect(
+    () =>
+      onSaveFailure((message) => {
+        if (Platform.OS === 'web') globalThis.alert?.(message);
+        else Alert.alert('Not saved', message);
+      }),
+    [],
+  );
+  return null;
+}
+
 export default function RootLayout() {
   const scheme = useColorScheme();
+  // In the browser, saved data loads from IndexedDB before the app can read it.
+  const [ready, setReady] = useState(Platform.OS !== 'web');
+  useEffect(() => {
+    if (!ready) void kvReady.then(() => setReady(true));
+  }, [ready]);
   const dark = scheme === 'dark';
   const c = dark ? Colors.dark : Colors.light;
   const base = dark ? DarkTheme : DefaultTheme;
@@ -22,12 +42,15 @@ export default function RootLayout() {
     colors: { ...base.colors, primary: c.ink, background: c.background, card: c.card, text: c.text },
   };
 
+  if (!ready) return null;
+
   return (
     <StoreProvider>
       <SyncProvider>
         <ThemeProvider value={theme}>
           <StatusBar style="auto" />
           <ReminderSync />
+        <SaveFailureAlert />
           <Stack
             screenOptions={{
               headerTintColor: c.ink,

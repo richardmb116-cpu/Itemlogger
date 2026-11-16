@@ -135,9 +135,11 @@ export function itemsFromScan(
     }));
 }
 
-/** The lines ticked by default: things worth tracking. */
+/** The lines ticked by default: things worth tracking, or everything if none looks worth it
+ * (someone scanning a one-line receipt almost certainly wants that line). */
 export function defaultSelection(scan: ReceiptScan): Set<string> {
-  return new Set(scan.lines.filter((l) => l.durable).map((l) => l.key));
+  const durable = scan.lines.filter((l) => l.durable);
+  return new Set((durable.length ? durable : scan.lines).map((l) => l.key));
 }
 
 /** Whether the lines add up to roughly the receipt total (sales tax makes the total a little higher). */

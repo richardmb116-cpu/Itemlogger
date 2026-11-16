@@ -91,6 +91,8 @@ export default function ScanScreen() {
     // Save in receipt order, so the first line ends up at the top of the list.
     [...items].reverse().forEach(saveItem);
     router.dismissTo('/');
+    // One item: open it, so it's clear it was added. Several: they're at the top of the list.
+    if (items.length === 1) setTimeout(() => router.push({ pathname: '/item/[id]', params: { id: items[0].id } }), 50);
   };
 
   if (stage === 'reading') {
@@ -164,7 +166,8 @@ export default function ScanScreen() {
           ) : (
             <PrimaryButton
               label={selected.size === 0 ? 'Tick the items to add' : `Add ${selected.size} item${selected.size === 1 ? '' : 's'}`}
-              icon="add"
+              icon={selected.size === 0 ? undefined : 'add'}
+              disabled={selected.size === 0}
               onPress={() => void add()}
             />
           )}

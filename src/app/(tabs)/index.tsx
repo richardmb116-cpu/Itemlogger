@@ -14,7 +14,7 @@ import { CATEGORIES, categoryInfo } from '@/lib/categories';
 import { formatMoney } from '@/lib/format';
 import { CATEGORY_PHOTOS, HOME_HERO_PHOTO } from '@/lib/photos';
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
-import { sortItems, useStore } from '@/lib/store';
+import { sortRecent, useStore } from '@/lib/store';
 import { sellPlan } from '@/lib/upgrade';
 import { currencyFor } from '@/lib/tax';
 import type { Category, ItemUse } from '@/lib/types';
@@ -42,7 +42,7 @@ export default function ItemsScreen() {
   const [category, setCategory] = useState<Category | null>(null);
   const [use, setUse] = useState<ItemUse | 'sold' | null>(null);
 
-  const sorted = useMemo(() => sortItems(items), [items]);
+  const sorted = useMemo(() => sortRecent(items), [items]);
   // Sold items are kept for records but drop out of totals, warranties and categories.
   const owned = useMemo(() => sorted.filter((i) => !i.sold), [sorted]);
   const soldCount = items.length - owned.length;

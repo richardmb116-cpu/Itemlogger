@@ -304,25 +304,34 @@ export function PrimaryButton({
   icon,
   onPress,
   secondary,
+  disabled,
 }: {
   label: string;
   icon?: IconName;
   onPress: () => void;
   /** Grey surface with ink text, for the less important of two actions. */
   secondary?: boolean;
+  /** Shown faded and does nothing, e.g. until something is chosen. */
+  disabled?: boolean;
 }) {
   const c = useColors();
   const fg = secondary ? c.ink : c.onInk;
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
       onPress={() => {
         tap();
         onPress();
       }}
       style={({ pressed }) => [
         styles.primary,
-        { backgroundColor: secondary ? c.card : c.ink, transform: [{ scale: pressed ? 0.98 : 1 }] },
+        {
+          backgroundColor: secondary ? c.card : c.ink,
+          opacity: disabled ? 0.35 : 1,
+          transform: [{ scale: pressed ? 0.98 : 1 }],
+        },
       ]}>
       {icon ? <Ionicons name={icon} size={19} color={fg} /> : null}
       <AppText variant="headline" color={fg} style={{ fontWeight: '700' }}>

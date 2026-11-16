@@ -83,3 +83,8 @@ test('the prompt names the region and today', () => {
   assert.match(receiptPrompt('AU', today), /Australian dollars/);
   assert.match(receiptPrompt('US', today), /Today is 2026-11-16/);
 });
+
+test('a receipt with nothing "worth tracking" ticks everything rather than nothing', () => {
+  const scan = normalizeScan({ store: 'Hardware', items: [{ name: 'Extension cord', quantity: 1, unitPrice: 12, durable: false }] }, today);
+  assert.equal(defaultSelection(scan).size, 1);
+});

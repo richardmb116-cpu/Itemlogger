@@ -168,6 +168,11 @@ export function useStore(): Store {
   return ctx;
 }
 
+/** Most recently added first, so something just added (even an old purchase) is at the top. */
+export function sortRecent(items: Item[]): Item[] {
+  return [...items].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.purchaseDate.localeCompare(a.purchaseDate));
+}
+
 /** Newest purchases first. */
 export function sortItems(items: Item[]): Item[] {
   return [...items].sort((a, b) => b.purchaseDate.localeCompare(a.purchaseDate) || b.createdAt.localeCompare(a.createdAt));
