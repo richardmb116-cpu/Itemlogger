@@ -88,3 +88,11 @@ test('a receipt with nothing "worth tracking" ticks everything rather than nothi
   const scan = normalizeScan({ store: 'Hardware', items: [{ name: 'Extension cord', quantity: 1, unitPrice: 12, durable: false }] }, today);
   assert.equal(defaultSelection(scan).size, 1);
 });
+
+test('each line can be personal or work, and new items keep that', () => {
+  const scan = normalizeScan(raw, today);
+  assert.ok(scan.lines.every((l) => l.use === 'personal')); // the default
+  const lines = scan.lines.map((l, i) => (i === 0 ? { ...l, use: 'work' as const } : l));
+  const items = itemsFromScan({ ...scan, lines }, new Set(lines.slice(0, 2).map((l) => l.key)), { receiptUri: null, newId: () => 'x', today });
+  assert.deepEqual(items.map((i) => [i.use, i.workPercent]), [['work', 100], ['personal', 100]]);
+});

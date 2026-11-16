@@ -4,7 +4,7 @@ import { router, Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { AppText, PrimaryButton, Row, Section, tap } from '@/components/ui';
+import { AppText, PrimaryButton, Row, Section, Segmented, tap } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { categoryInfo } from '@/lib/categories';
 import { formatDate, formatMoney, parsePrice } from '@/lib/format';
@@ -115,6 +115,8 @@ export default function ScanScreen() {
     const worth = scan.lines.filter((l) => l.durable);
     const rest = scan.lines.filter((l) => !l.durable);
     const check = totalCheck(scan);
+    const chosen = scan.lines.filter((l) => selected.has(l.key));
+    const allUse = chosen.length > 0 && chosen.every((l) => l.use === 'work') ? 'work' : chosen.some((l) => l.use === 'work') ? 'mixed' : 'personal';
     return (
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <Stack.Screen options={{ title: 'Choose what to add' }} />
@@ -133,7 +135,22 @@ export default function ScanScreen() {
                 accessibilityLabel="Store"
               />
             </Row>
-            <Row label="Purchased" value={scan.date ? formatDate(scan.date, region) : 'Today'} last />
+            <Row label="Purchased" value={scan.date ? formatDate(scan.date, region) : 'Today'} />
+            <View style={styles.useRow}>
+              <AppText variant="body">Used for</AppText>
+              <View style={{ flex: 1, maxWidth: 220 }}>
+                <Segmented
+                  value={allUse}
+                  onChange={(use) => {
+                    if (use !== 'mixed') setScan({ ...scan, lines: scan.lines.map((l) => ({ ...l, use })) });
+                  }}
+                  options={[
+                    { value: 'personal', label: 'Personal' },
+                    { value: 'work', label: 'Work' },
+                  ]}
+                />
+              </View>
+            </View>
           </Section>
 
           {worth.length > 0 ? (
@@ -248,9 +265,25 @@ function LineRow({
           style={[styles.name, { color: c.text }]}
           accessibilityLabel="Item name"
         />
-        <AppText variant="caption" color={c.textSecondary} numberOfLines={1}>
-          {[categoryInfo(line.category).label, line.model].filter(Boolean).join(' · ')}
-        </AppText>
+        <View style={styles.meta}>
+          <Pressable
+            onPress={() => {
+              tap();
+              onChange(line.key, { use: line.use === 'work' ? 'personal' : 'work' });
+            }}
+            hitSlop={6}
+            accessibilityRole="button"
+            accessibilityLabel={`${line.name}: ${line.use === 'work' ? 'work' : 'personal'}. Tap to change.`}
+            style={[styles.usePill, { backgroundColor: line.use === 'work' ? c.ink : c.fill }]}>
+            <Ionicons name={line.use === 'work' ? 'briefcase' : 'home'} size={10} color={line.use === 'work' ? c.onInk : c.textSecondary} />
+            <AppText variant="caption" color={line.use === 'work' ? c.onInk : c.textSecondary} style={{ fontWeight: '600' }}>
+              {line.use === 'work' ? 'Work' : 'Personal'}
+            </AppText>
+          </Pressable>
+          <AppText variant="caption" color={c.textSecondary} numberOfLines={1} style={{ flex: 1 }}>
+            {[categoryInfo(line.category).label, line.model].filter(Boolean).join(' · ')}
+          </AppText>
+        </View>
       </View>
       <TextInput
         value={price}
@@ -279,5 +312,8 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '600', paddingVertical: 0 },
   price: { width: 84, textAlign: 'right', fontSize: 16, fontVariant: ['tabular-nums'], paddingVertical: 4 },
   note: { paddingHorizontal: Spacing.xl, lineHeight: 18 },
+  useRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingVertical: 10 },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  usePill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
   footer: { position: 'absolute', left: 0, right: 0, bottom: 0, padding: Spacing.lg, paddingBottom: Spacing.xl, borderTopWidth: StyleSheet.hairlineWidth },
 });

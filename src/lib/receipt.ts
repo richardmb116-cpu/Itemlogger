@@ -1,5 +1,5 @@
 import { toISODate } from './dates';
-import type { Category, Item, TaxRegion } from './types';
+import type { Category, Item, ItemUse, TaxRegion } from './types';
 
 /** One product line read off a receipt. Quantity lines (2 × lamp) are split into one line per unit. */
 export type ReceiptLine = {
@@ -11,6 +11,8 @@ export type ReceiptLine = {
   category: Category;
   /** Worth tracking (a lamp, a drill), as opposed to groceries, fees, bags or gift cards. */
   durable: boolean;
+  /** Personal or work; work items count toward the tax summary. */
+  use: ItemUse;
 };
 
 export type ReceiptScan = {
@@ -90,6 +92,7 @@ export function normalizeScan(raw: unknown, today = new Date()): ReceiptScan {
         price: money(e.unitPrice),
         category,
         durable: e.durable !== false,
+        use: 'personal',
       });
     }
   });
@@ -121,7 +124,7 @@ export function itemsFromScan(
       store: scan.store,
       serial: '',
       warrantyMonths: defaultWarranty(l.category),
-      use: 'personal',
+      use: l.use,
       workPercent: 100,
       effectiveLifeYears: null,
       condition: 'like-new',
