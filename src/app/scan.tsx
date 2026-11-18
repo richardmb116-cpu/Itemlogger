@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
+import { RoomPicker } from '@/components/room-picker';
 import { AppText, PrimaryButton, Row, Section, Segmented, tap } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { categoryInfo } from '@/lib/categories';
@@ -27,6 +28,9 @@ export default function ScanScreen() {
   const c = useColors();
   const { settings, saveItem } = useStore();
   const { earn } = useBadges();
+  // A room quest opens the scanner for one room.
+  const params = useLocalSearchParams<{ room?: string }>();
+  const [room, setRoom] = useState<string | null>(typeof params.room === 'string' ? params.room : null);
   const region = settings.taxRegion;
   const [available, setAvailable] = useState<boolean | null>(null);
   const [stage, setStage] = useState<Stage>('start');
@@ -89,7 +93,7 @@ export default function ScanScreen() {
     if (!scan || !image || selected.size === 0) return;
     setSaving(true);
     const receiptUri = await storeReceipt(image).catch(() => null);
-    const items = itemsFromScan(scan, selected, { receiptUri, newId });
+    const items = itemsFromScan(scan, selected, { receiptUri, newId, room });
     // Save in receipt order, so the first line ends up at the top of the list.
     [...items].reverse().forEach(saveItem);
     earn('first-scan');
@@ -154,6 +158,10 @@ export default function ScanScreen() {
                 />
               </View>
             </View>
+          </Section>
+
+          <Section title="Room" footer="Where these live. Optional.">
+            <RoomPicker value={room} onChange={setRoom} />
           </Section>
 
           {worth.length > 0 ? (
@@ -222,7 +230,7 @@ export default function ScanScreen() {
             {readerErrorMessage({ code: 'unavailable' })}
           </AppText>
         )}
-        <PrimaryButton label="Add one item by hand" secondary onPress={() => router.replace('/item/edit')} />
+        <PrimaryButton label="Add one item by hand" secondary onPress={() => router.replace({ pathname: '/item/edit', params: room ? { room } : {} })} />
       </View>
       {available ? (
         <AppText variant="footnote" color={c.textTertiary} style={{ textAlign: 'center', marginTop: Spacing.md }}>

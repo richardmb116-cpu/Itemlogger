@@ -5,6 +5,7 @@ import { useState, type ComponentProps } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { DateField } from '@/components/date-field';
+import { RoomPicker } from '@/components/room-picker';
 import { AppText, Chip, Row, Section, Segmented, tap } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { CATEGORIES } from '@/lib/categories';
@@ -27,7 +28,8 @@ const WARRANTY_OPTIONS: { months: number | null; label: string }[] = [
 ];
 
 export default function EditItemScreen() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const params = useLocalSearchParams<{ id?: string; room?: string }>();
+  const id = params.id;
   const c = useColors();
   const { getItem, saveItem, settings } = useStore();
   const existing = id ? getItem(id) : undefined;
@@ -41,6 +43,7 @@ export default function EditItemScreen() {
   const [serial, setSerial] = useState(existing?.serial ?? '');
   const [warrantyMonths, setWarrantyMonths] = useState<number | null>(existing ? existing.warrantyMonths : 12);
   const [use, setUse] = useState<ItemUse>(existing?.use ?? 'personal');
+  const [room, setRoom] = useState<string | null>(existing?.room ?? (typeof params.room === 'string' ? params.room : null));
   const [workPercent, setWorkPercent] = useState(String(existing?.workPercent ?? 100));
   const [lifeYears, setLifeYears] = useState(existing?.effectiveLifeYears != null ? String(existing.effectiveLifeYears) : '');
   const [condition, setCondition] = useState<Condition>(existing?.condition ?? 'like-new');
@@ -75,6 +78,7 @@ export default function EditItemScreen() {
       use,
       workPercent: clampPercent(workPercent),
       effectiveLifeYears: parseLife(lifeYears),
+      room,
       condition,
       checkedPrice: existing?.checkedPrice ?? null,
       sold: existing?.sold ?? null,
@@ -175,6 +179,10 @@ export default function EditItemScreen() {
               );
             })}
           </View>
+        </Section>
+
+        <Section title="Room" footer="Where it lives. Handy for insurance claims and for building your inventory one room at a time.">
+          <RoomPicker value={room} onChange={setRoom} />
         </Section>
 
         <Section title="Condition" footer="Used to estimate what it would sell for second-hand.">

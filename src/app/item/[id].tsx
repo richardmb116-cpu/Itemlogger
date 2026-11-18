@@ -16,6 +16,7 @@ import { todayISO, toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
 import { itemPhoto, photoSource } from '@/lib/photos';
 import { useStore } from '@/lib/store';
+import { roomInfo } from '@/lib/rooms';
 import { sellPlan } from '@/lib/upgrade';
 import { deductionFor, depreciationSchedule } from '@/lib/depreciation';
 import { taxYearByEnd, taxYearFor } from '@/lib/tax';
@@ -305,6 +306,7 @@ export default function ItemDetailScreen() {
           )}
           <Row label="Model" value={item.model || '—'} />
           <Row label="Store" value={item.store || '—'} />
+          <Row label="Room" value={roomInfo(item.room)?.label ?? '—'} />
           <Row label="Serial number" value={item.serial || '—'} last />
         </Section>
 

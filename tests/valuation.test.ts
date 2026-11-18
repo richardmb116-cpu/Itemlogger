@@ -12,7 +12,7 @@ const today = new Date(2026, 10, 14);
 function item(over: Partial<Item>): Item {
   return {
     id: 'x', name: 'Test thing', category: 'electronics', price: 1000, purchaseDate: '2025-11-14', store: 'JB Hi-Fi',
-    model: '', serial: 'SN1', warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, condition: 'good', checkedPrice: null, sold: null, notes: '',
+    model: '', serial: 'SN1', warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, room: null, condition: 'good', checkedPrice: null, sold: null, notes: '',
     photoUri: null, receiptUri: null, createdAt: '', updatedAt: '', ...over,
   };
 }

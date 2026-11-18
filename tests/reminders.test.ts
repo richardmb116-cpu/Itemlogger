@@ -9,7 +9,7 @@ const now = new Date(2026, 10, 14, 12, 0); // 14 Nov 2026, noon local
 
 function item(id: string, purchaseDate: string, warrantyMonths: number | null): Item {
   return {
-    id, name: `Item ${id}`, model: '', checkedPrice: null, workPercent: 100, effectiveLifeYears: null, category: 'other', price: 100, purchaseDate, store: '', serial: '',
+    id, name: `Item ${id}`, model: '', checkedPrice: null, workPercent: 100, effectiveLifeYears: null, room: null, category: 'other', price: 100, purchaseDate, store: '', serial: '',
     warrantyMonths, use: 'personal', condition: 'good', sold: null, notes: '', photoUri: null, receiptUri: null, createdAt: '', updatedAt: '',
   };
 }

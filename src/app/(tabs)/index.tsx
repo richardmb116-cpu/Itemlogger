@@ -12,7 +12,9 @@ import { AppText, Chip, IconButton, SectionHeading, tap } from '@/components/ui'
 import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
 import { ordinal, upcomingBirthdays } from '@/lib/birthdays';
 import { CATEGORIES, categoryInfo } from '@/lib/categories';
-import { categoryCounts, filterItems, groupByCategory, type UseFilter } from '@/lib/item-filter';
+import { categoryCounts, filterItems, groupByCategory, groupByRoom, type UseFilter } from '@/lib/item-filter';
+import { roomInfo } from '@/lib/rooms';
+import { streak } from '@/lib/streaks';
 import { formatMoney } from '@/lib/format';
 import { HOME_HERO_PHOTO } from '@/lib/photos';
 import { CHECK_LABEL, pointsLabel, protection } from '@/lib/progress';
@@ -40,8 +42,8 @@ export default function ItemsScreen() {
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<Category | null>(null);
   const [use, setUse] = useState<UseFilter>(null);
-  const [collapsed, setCollapsed] = useState<Set<Category>>(new Set());
-  const grouped = settings.groupByCategory;
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const groupBy = settings.groupBy;
 
   const sorted = useMemo(() => sortRecent(items), [items]);
   // Sold items are kept for records but drop out of totals, warranties and categories.
@@ -70,25 +72,43 @@ export default function ItemsScreen() {
   const sellStatuses = new Map(readyToSell.map((r) => [r.item.id, r.plan.status]));
   const prot = protection(items);
   const nextStep = prot.steps[0];
+  const weeks = streak(settings.activity).current;
   const q = query.trim();
   const visible = filterItems(sorted, { query, category, use });
   // Category chips count what the other filters leave, so the numbers match what a tap shows.
   const counts = categoryCounts(filterItems(sorted, { query, category: null, use }));
   const usedCategories = CATEGORIES.filter((cat) => counts.has(cat.id) || cat.id === category);
-  const sections = (grouped ? groupByCategory(visible) : [{ category: null, label: '', items: visible }]).map((g) => ({
-    key: g.category ?? 'all',
-    category: g.category,
-    label: g.label,
-    count: g.items.length,
-    worth: g.items.reduce((s, i) => s + (values.get(i.id) ?? 0), 0),
-    data: g.category && collapsed.has(g.category) ? [] : g.items,
-  }));
-  const toggleSection = (cat: Category) => {
+  type Group = { key: string; label: string; icon: IconName; items: typeof visible };
+  const groups: Group[] =
+    groupBy === 'category'
+      ? groupByCategory(visible).map((g) => ({ key: g.category, label: g.label, icon: categoryInfo(g.category).icon, items: g.items }))
+      : groupBy === 'room'
+        ? groupByRoom(visible).map((g) => ({
+            key: g.room ?? 'none',
+            label: g.label,
+            icon: roomInfo(g.room)?.icon ?? 'help-circle-outline',
+            items: g.items,
+          }))
+        : [];
+  type ListSection = { key: string; label: string; icon: IconName | null; count: number; worth: number; data: typeof visible };
+  const sections: ListSection[] =
+    groupBy === 'none'
+      ? [{ key: 'all', label: '', icon: null, count: visible.length, worth: 0, data: visible }]
+      : groups.map((g) => ({
+          key: g.key,
+          label: g.label,
+          icon: g.icon,
+          count: g.items.length,
+          worth: g.items.reduce((s, i) => s + (values.get(i.id) ?? 0), 0),
+          data: collapsed.has(g.key) ? [] : g.items,
+        }));
+  const nextGroupBy = groupBy === 'none' ? 'category' : groupBy === 'category' ? 'room' : 'none';
+  const toggleSection = (key: string) => {
     tap();
     setCollapsed((prev) => {
       const next = new Set(prev);
-      if (next.has(cat)) next.delete(cat);
-      else next.add(cat);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -237,7 +257,16 @@ export default function ItemsScreen() {
                   : 'Badges, money and next steps'}
               </AppText>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
+            {weeks > 0 ? (
+              <View style={[styles.flame, { backgroundColor: c.background }]} accessibilityLabel={`${weeks}-week streak`}>
+                <Ionicons name="flame" size={14} color="#E8701A" />
+                <AppText variant="subhead" style={{ fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+                  {weeks}
+                </AppText>
+              </View>
+            ) : (
+              <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
+            )}
           </Pressable>
 
           {showReminderPrompt ? (
@@ -346,8 +375,8 @@ export default function ItemsScreen() {
 
       <SectionHeading
         title={q ? `${visible.length} result${visible.length === 1 ? '' : 's'}` : use === 'sold' ? 'Sold' : 'Everything'}
-        action={grouped ? 'Show as list' : 'Group by category'}
-        onAction={() => updateSettings({ groupByCategory: !grouped })}
+        action={nextGroupBy === 'category' ? 'Group by category' : nextGroupBy === 'room' ? 'Group by room' : 'Show as list'}
+        onAction={() => updateSettings({ groupBy: nextGroupBy })}
       />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         <Chip label="All" selected={use === null} onPress={() => setUse(null)} />
@@ -389,15 +418,15 @@ export default function ItemsScreen() {
           </AppText>
         }
         renderSectionHeader={({ section }) =>
-          section.category ? (
+          section.icon ? (
             <Pressable
-              onPress={() => toggleSection(section.category!)}
+              onPress={() => toggleSection(section.key)}
               accessibilityRole="button"
-              accessibilityState={{ expanded: !collapsed.has(section.category) }}
+              accessibilityState={{ expanded: !collapsed.has(section.key) }}
               accessibilityLabel={`${section.label}, ${section.count} items`}
               style={[styles.groupHead, { borderBottomColor: c.separator }]}>
               <View style={[styles.groupIcon, { backgroundColor: c.card }]}>
-                <Ionicons name={categoryInfo(section.category).icon} size={16} color={c.ink} />
+                <Ionicons name={section.icon} size={16} color={c.ink} />
               </View>
               <View style={{ flex: 1 }}>
                 <AppText variant="headline">{section.label}</AppText>
@@ -407,7 +436,7 @@ export default function ItemsScreen() {
                 </AppText>
               </View>
               <Ionicons
-                name={collapsed.has(section.category) ? 'chevron-forward' : 'chevron-down'}
+                name={collapsed.has(section.key) ? 'chevron-forward' : 'chevron-down'}
                 size={18}
                 color={c.textTertiary}
               />
@@ -518,6 +547,7 @@ const styles = StyleSheet.create({
   birthdayRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   shelf: { gap: Spacing.md, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xxl },
   chips: { gap: Spacing.sm, paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
+  flame: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 999 },
   protect: {
     flexDirection: 'row',
     alignItems: 'center',

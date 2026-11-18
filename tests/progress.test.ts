@@ -10,7 +10,7 @@ let n = 0;
 function item(over: Partial<Item>): Item {
   return {
     id: `i${n++}`, name: 'Thing', model: '', category: 'furniture', price: 100, purchaseDate: '2026-01-01', store: '',
-    serial: '', warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, condition: 'good',
+    serial: '', warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, room: null, condition: 'good',
     checkedPrice: null, sold: null, notes: '', photoUri: null, receiptUri: null, createdAt: '', updatedAt: '', ...over,
   };
 }

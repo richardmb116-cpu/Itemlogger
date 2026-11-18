@@ -6,6 +6,7 @@ import { bundledUri } from './photos';
 import { DEFAULT_REMINDER_DAYS } from './reminder-plan';
 import { markChanged, markDeleted, markSettingsChanged } from './outbox';
 import { kv } from './storage';
+import { isProgress, recordWeek } from './streaks';
 import { SYNCED_SETTING_KEYS, type SyncedSettings } from './sync-merge';
 import type { SyncHost } from './sync';
 import type { Item, Settings, TaxRegion } from './types';
@@ -23,7 +24,8 @@ const DEFAULT_SETTINGS: Settings = {
   birthdaysEnabled: true,
   reminderDays: DEFAULT_REMINDER_DAYS,
   remindersPromptDismissed: false,
-  groupByCategory: false,
+  groupBy: 'none',
+  activity: [],
   badges: {},
 };
 
@@ -67,6 +69,7 @@ function normalize(item: Partial<Item> & Pick<Item, 'id'>): Item {
     sold: null,
     workPercent: 100,
     effectiveLifeYears: null,
+    room: null,
     ...item,
   } as Item;
 }
@@ -77,7 +80,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return latest.items;
   });
   const [settings, setSettings] = useState<Settings>(() => {
-    const saved = load<Partial<Settings>>(SETTINGS_KEY, {});
+    const saved = load<Partial<Settings> & { groupByCategory?: boolean }>(SETTINGS_KEY, {});
+    if (saved.groupBy == null && saved.groupByCategory) saved.groupBy = 'category';
+    delete saved.groupByCategory;
     latest.settings = {
       ...DEFAULT_SETTINGS,
       ...saved,
@@ -113,6 +118,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveItem: (item) => {
         const stamped = { ...item, updatedAt: new Date().toISOString() };
         markChanged([stamped.id]);
+        // Adding or improving something keeps the weekly streak going.
+        const current = latest.settings ?? DEFAULT_SETTINGS;
+        if (isProgress(latest.items.find((i) => i.id === stamped.id), stamped)) {
+          const activity = recordWeek(current.activity);
+          if (activity !== current.activity) {
+            markSettingsChanged(new Date().toISOString());
+            writeSettings({ activity });
+          }
+        }
         writeItems((prev) => {
           const exists = prev.some((i) => i.id === stamped.id);
           return exists ? prev.map((i) => (i.id === stamped.id ? stamped : i)) : [stamped, ...prev];
@@ -196,13 +210,13 @@ function sampleItems(region: TaxRegion): Item[] {
     updatedAt: stamp,
   };
   const rows: (Omit<Item, 'id' | 'notes' | 'photoUri' | 'receiptUri' | 'checkedPrice' | 'sold' | 'effectiveLifeYears' | 'createdAt' | 'updatedAt'> & { photoUri?: string })[] = [
-    { name: 'MacBook Pro 14"', photoUri: bundledUri('laptop'), model: 'Apple MacBook Pro 14 M4', category: 'electronics', price: 3299, purchaseDate: ago(4), store: 'Apple Store', serial: 'C02XK1J2MD6R', warrantyMonths: 24, condition: 'like-new', workPercent: 80, use: 'work' },
-    { name: 'Dyson V15 Detect', model: 'Dyson V15 Detect Absolute', category: 'appliances', price: 1249, purchaseDate: ago(23, 3), store: us ? 'Best Buy' : 'JB Hi-Fi', serial: 'SV22-AU-48120', warrantyMonths: 24, condition: 'good', workPercent: 100, use: 'personal' },
-    { name: 'Herman Miller Aeron', photoUri: bundledUri('chair'), model: 'Herman Miller Aeron size B', category: 'furniture', price: 2150, purchaseDate: ago(14), store: us ? 'Design Within Reach' : 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', workPercent: 100, use: 'work' },
-    { name: 'Breville Barista Express', photoUri: bundledUri('coffee'), model: 'Breville BES870', category: 'kitchen', price: 899, purchaseDate: ago(30), store: us ? 'Williams Sonoma' : 'Myer', serial: 'BES870BSS', warrantyMonths: 24, condition: 'fair', workPercent: 100, use: 'personal' },
-    { name: 'Sony WH-1000XM6', photoUri: bundledUri('headphones'), model: 'Sony WH-1000XM6', category: 'electronics', price: 649.95, purchaseDate: ago(1), store: 'Amazon', serial: '5512093', warrantyMonths: 12, condition: 'like-new', workPercent: 50, use: 'work' },
-    { name: 'iPhone 15 Pro', model: 'Apple iPhone 15 Pro 256GB', category: 'electronics', price: 1099, purchaseDate: ago(25), store: us ? 'Apple Store' : 'JB Hi-Fi', serial: 'F2LXK9QWN8', warrantyMonths: 12, condition: 'good', workPercent: 100, use: 'personal' },
-    { name: 'Makita drill kit', photoUri: bundledUri('drill'), model: 'Makita DHP487', category: 'tools', price: 389, purchaseDate: ago(12, now.getDate()), store: us ? 'The Home Depot' : 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', workPercent: 100, use: 'personal' },
+    { room: 'office', name: 'MacBook Pro 14"', photoUri: bundledUri('laptop'), model: 'Apple MacBook Pro 14 M4', category: 'electronics', price: 3299, purchaseDate: ago(4), store: 'Apple Store', serial: 'C02XK1J2MD6R', warrantyMonths: 24, condition: 'like-new', workPercent: 80, use: 'work' },
+    { room: 'storage', name: 'Dyson V15 Detect', model: 'Dyson V15 Detect Absolute', category: 'appliances', price: 1249, purchaseDate: ago(23, 3), store: us ? 'Best Buy' : 'JB Hi-Fi', serial: 'SV22-AU-48120', warrantyMonths: 24, condition: 'good', workPercent: 100, use: 'personal' },
+    { room: 'office', name: 'Herman Miller Aeron', photoUri: bundledUri('chair'), model: 'Herman Miller Aeron size B', category: 'furniture', price: 2150, purchaseDate: ago(14), store: us ? 'Design Within Reach' : 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', workPercent: 100, use: 'work' },
+    { room: 'kitchen', name: 'Breville Barista Express', photoUri: bundledUri('coffee'), model: 'Breville BES870', category: 'kitchen', price: 899, purchaseDate: ago(30), store: us ? 'Williams Sonoma' : 'Myer', serial: 'BES870BSS', warrantyMonths: 24, condition: 'fair', workPercent: 100, use: 'personal' },
+    { room: 'living', name: 'Sony WH-1000XM6', photoUri: bundledUri('headphones'), model: 'Sony WH-1000XM6', category: 'electronics', price: 649.95, purchaseDate: ago(1), store: 'Amazon', serial: '5512093', warrantyMonths: 12, condition: 'like-new', workPercent: 50, use: 'work' },
+    { room: 'bedroom', name: 'iPhone 15 Pro', model: 'Apple iPhone 15 Pro 256GB', category: 'electronics', price: 1099, purchaseDate: ago(25), store: us ? 'Apple Store' : 'JB Hi-Fi', serial: 'F2LXK9QWN8', warrantyMonths: 12, condition: 'good', workPercent: 100, use: 'personal' },
+    { room: 'garage', name: 'Makita drill kit', photoUri: bundledUri('drill'), model: 'Makita DHP487', category: 'tools', price: 389, purchaseDate: ago(12, now.getDate()), store: us ? 'The Home Depot' : 'Bunnings', serial: 'DHP487Z-0921', warrantyMonths: 36, condition: 'worn', workPercent: 100, use: 'personal' },
   ];
   return rows.map((r, i) => ({ ...base, ...r, id: `sample-${i}-${newId()}` }));
 }

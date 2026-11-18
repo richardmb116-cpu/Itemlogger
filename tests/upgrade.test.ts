@@ -14,7 +14,7 @@ function item(over: Partial<Item>): Item {
   return {
     id: 'x', name: 'MacBook Pro 14"', model: 'Apple MacBook Pro 14 M4', category: 'electronics', price: 3299,
     purchaseDate: '2026-07-12', store: '', serial: '', warrantyMonths: 24, use: 'personal', workPercent: 100,
-    effectiveLifeYears: null, condition: 'good', checkedPrice: null, sold: null, notes: '', photoUri: null,
+    effectiveLifeYears: null, room: null, condition: 'good', checkedPrice: null, sold: null, notes: '', photoUri: null,
     receiptUri: null, createdAt: '', updatedAt: '', ...over,
   };
 }

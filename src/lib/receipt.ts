@@ -108,7 +108,7 @@ function defaultWarranty(category: Category): number | null {
 export function itemsFromScan(
   scan: ReceiptScan,
   selected: Set<string>,
-  opts: { receiptUri: string | null; newId: () => string; today?: Date },
+  opts: { receiptUri: string | null; newId: () => string; today?: Date; room?: string | null },
 ): Item[] {
   const now = new Date().toISOString();
   const date = scan.date ?? toISODate(opts.today ?? new Date());
@@ -127,6 +127,7 @@ export function itemsFromScan(
       use: l.use,
       workPercent: 100,
       effectiveLifeYears: null,
+      room: opts.room ?? null,
       condition: 'like-new',
       checkedPrice: null,
       sold: null,

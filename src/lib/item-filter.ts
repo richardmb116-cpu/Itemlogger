@@ -1,4 +1,5 @@
 import { CATEGORIES, categoryInfo } from './categories';
+import { ROOMS, roomInfo } from './rooms';
 import type { Category, Item, ItemUse } from './types';
 
 export type UseFilter = ItemUse | 'sold' | null;
@@ -14,6 +15,7 @@ export function matchesSearch(item: Item, query: string): boolean {
     item.serial,
     item.notes,
     categoryInfo(item.category).label,
+    roomInfo(item.room)?.label ?? '',
     item.use === 'work' ? 'work' : 'personal',
     item.sold ? 'sold' : '',
   ]
@@ -41,6 +43,15 @@ export function groupByCategory(items: Item[]): ItemGroup[] {
   return CATEGORIES.map((cat) => ({ category: cat.id, label: cat.label, items: items.filter((i) => i.category === cat.id) })).filter(
     (g) => g.items.length > 0,
   );
+}
+
+export type RoomGroup = { room: string | null; label: string; items: Item[] };
+
+/** Items grouped by room, in the room list's order, with things not yet placed last. */
+export function groupByRoom(items: Item[]): RoomGroup[] {
+  const groups: RoomGroup[] = ROOMS.map((r) => ({ room: r.id, label: r.label, items: items.filter((i) => i.room === r.id) }));
+  groups.push({ room: null, label: 'No room yet', items: items.filter((i) => !roomInfo(i.room)) });
+  return groups.filter((g) => g.items.length > 0);
 }
 
 /** How many items fall in each category (for the filter chips). */

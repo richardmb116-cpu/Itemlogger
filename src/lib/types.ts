@@ -46,6 +46,8 @@ export type Item = {
   use: ItemUse;
   /** Share of use that's for work, 1–100. Only applies when use is "work". */
   workPercent: number;
+  /** Where it lives (see rooms.ts); null when not set. */
+  room: string | null;
   /** Effective life in years for depreciation; null uses the suggested life. */
   effectiveLifeYears: number | null;
   condition: Condition;
@@ -97,8 +99,10 @@ export type Settings = {
   birthdaysEnabled: boolean;
   /** The "turn on reminders" card on the Items screen was dismissed. */
   remindersPromptDismissed: boolean;
-  /** Show the item list grouped by category, with sections that collapse. Per device. */
-  groupByCategory: boolean;
+  /** How the item list is grouped, with sections that collapse. Per device. */
+  groupBy: 'none' | 'category' | 'room';
+  /** Weeks (their Monday, yyyy-mm-dd) in which something was added or improved, for the streak. */
+  activity: string[];
   /** Badges earned, by id, with when (ISO). Once earned, a badge stays earned. */
   badges: Partial<Record<string, string>>;
 };

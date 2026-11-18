@@ -10,7 +10,7 @@ const dep: DepreciationSettings = { auMethod: 'diminishing', auLowValuePool: fal
 function item(over: Partial<Item>): Item {
   return {
     id: 'x', name: 'MacBook Pro', model: 'M4 14"', category: 'electronics', price: 3299, purchaseDate: '2026-07-12',
-    store: 'Apple', serial: 'SN', warrantyMonths: null, use: 'work', workPercent: 80, effectiveLifeYears: null,
+    store: 'Apple', serial: 'SN', warrantyMonths: null, use: 'work', workPercent: 80, effectiveLifeYears: null, room: null,
     condition: 'good', checkedPrice: null, sold: null, notes: '', photoUri: null, receiptUri: 'file://r.jpg',
     createdAt: '', updatedAt: '', ...over,
   };

@@ -83,7 +83,7 @@ export function pendingRows(items: Item[], outbox: Outbox): { id: string; data: 
 /** Settings that follow the account. The rest (reminders permission, welcome seen) stay per device. */
 export type SyncedSettings = Pick<
   Settings,
-  'taxRegion' | 'upgradeStyle' | 'depreciation' | 'insurance' | 'reminderDays' | 'birthdaysEnabled' | 'badges'
+  'taxRegion' | 'upgradeStyle' | 'depreciation' | 'insurance' | 'reminderDays' | 'birthdaysEnabled' | 'badges' | 'activity'
 >;
 
 export const SYNCED_SETTING_KEYS: (keyof SyncedSettings)[] = [
@@ -94,6 +94,7 @@ export const SYNCED_SETTING_KEYS: (keyof SyncedSettings)[] = [
   'reminderDays',
   'birthdaysEnabled',
   'badges',
+  'activity',
 ];
 
 export function syncedSettings(s: Settings): SyncedSettings {

@@ -26,6 +26,7 @@ export function BadgeProvider({ children }: { children: ReactNode }) {
     region: settings.taxRegion,
     style: settings.upgradeStyle,
     events: new Set(Object.keys(earned) as BadgeId[]),
+    weeks: settings.activity,
   });
   const missing = [...qualifying].filter((id) => !earned[id]).sort();
   const missingKey = missing.join(',');

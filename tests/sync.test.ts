@@ -8,7 +8,7 @@ import type { Item } from '../src/lib/types';
 function item(id: string, updatedAt: string, name = id): Item {
   return {
     id, name, model: '', category: 'electronics', price: 100, purchaseDate: '2026-01-01', store: '', serial: '',
-    warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, condition: 'good',
+    warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, room: null, condition: 'good',
     checkedPrice: null, sold: null, notes: '', photoUri: null, receiptUri: null, createdAt: updatedAt, updatedAt,
   };
 }
@@ -67,7 +67,7 @@ test('only account-wide settings sync', async () => {
     onboarded: true, taxRegion: 'US', upgradeStyle: 'latest',
     depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
     insurance: { insurer: 'X', policyNumber: '1', sumInsured: 5 }, remindersEnabled: true, reminderDays: DEFAULT_REMINDER_DAYS,
-    birthdaysEnabled: true, remindersPromptDismissed: true, groupByCategory: false, badges: {},
+    birthdaysEnabled: true, remindersPromptDismissed: true, groupBy: 'none', activity: [], badges: {},
   });
   assert.equal('onboarded' in s, false);
   assert.equal('remindersEnabled' in s, false);

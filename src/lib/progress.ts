@@ -1,5 +1,7 @@
 import { accountantRows } from './accountant-export';
 import { ageOf } from './birthdays';
+import { ROOMS } from './rooms';
+import { streak } from './streaks';
 import { taxYearFor } from './tax';
 import type { Category, DepreciationSettings, Item, TaxRegion, UpgradeStyle } from './types';
 import { sellPlan } from './upgrade';
@@ -108,6 +110,23 @@ export function money(items: Item[], region: TaxRegion, dep: DepreciationSetting
   };
 }
 
+// Room quests
+
+/** A room is done when it has at least this many things, all fully recorded. */
+export const ROOM_DONE_MIN = 3;
+
+export type RoomQuest = { room: string; label: string; count: number; score: number; done: boolean };
+
+/** One quest per room: get everything in it recorded. Rooms with nothing yet come last. */
+export function roomQuests(items: Item[]): RoomQuest[] {
+  const owned = items.filter((i) => !i.sold);
+  return ROOMS.map((r) => {
+    const inRoom = owned.filter((i) => i.room === r.id);
+    const score = inRoom.length ? protection(inRoom).score : 0;
+    return { room: r.id, label: r.label, count: inRoom.length, score, done: inRoom.length >= ROOM_DONE_MIN && score === 100 };
+  }).sort((a, b) => Number(b.count > 0) - Number(a.count > 0));
+}
+
 // Badges
 
 export type BadgeId =
@@ -121,7 +140,11 @@ export type BadgeId =
   | 'protected'
   | 'perfect-timing'
   | 'tax-ready'
-  | 'birthday-club';
+  | 'birthday-club'
+  | 'streak-4'
+  | 'streak-12'
+  | 'room-done'
+  | 'rooms-3';
 
 export type Badge = { id: BadgeId; title: string; how: string; icon: string };
 
@@ -137,12 +160,16 @@ export const BADGES: Badge[] = [
   { id: 'perfect-timing', title: 'Perfect timing', how: 'Sell something inside its best window to sell.', icon: 'pricetag' },
   { id: 'tax-ready', title: 'Tax ready', how: 'A receipt for every work item.', icon: 'briefcase' },
   { id: 'birthday-club', title: 'Built to last', how: 'Keep something for 5 years.', icon: 'gift' },
+  { id: 'streak-4', title: 'On a roll', how: 'Add or improve something 4 weeks in a row.', icon: 'flame' },
+  { id: 'streak-12', title: 'Creature of habit', how: 'Keep a 12-week streak.', icon: 'bonfire' },
+  { id: 'room-done', title: 'Room complete', how: `Fully record 3+ things in one room.`, icon: 'home' },
+  { id: 'rooms-3', title: 'Room by room', how: 'Complete 3 rooms.', icon: 'business' },
 ];
 
 /** Badges the current data qualifies for. Events that leave no trace in the data (a scan) are passed in. */
 export function qualifyingBadges(
   items: Item[],
-  ctx: { region: TaxRegion; style: UpgradeStyle; events: Set<BadgeId>; today?: Date },
+  ctx: { region: TaxRegion; style: UpgradeStyle; events: Set<BadgeId>; today?: Date; weeks?: string[] },
 ): Set<BadgeId> {
   const today = ctx.today ?? new Date();
   const owned = items.filter((i) => !i.sold);
@@ -161,6 +188,13 @@ export function qualifyingBadges(
   const work = owned.filter((i) => i.use === 'work');
   if (work.length >= 1 && work.every((i) => !!i.receiptUri)) earned.add('tax-ready');
   if (owned.some((i) => ageOf(i.purchaseDate, today).years >= 5)) earned.add('birthday-club');
+
+  const s = streak(ctx.weeks ?? [], today);
+  if (Math.max(s.current, s.best) >= 4) earned.add('streak-4');
+  if (Math.max(s.current, s.best) >= 12) earned.add('streak-12');
+  const roomsDone = roomQuests(items).filter((q) => q.done).length;
+  if (roomsDone >= 1) earned.add('room-done');
+  if (roomsDone >= 3) earned.add('rooms-3');
 
   for (const item of items) {
     if (!item.sold) continue;

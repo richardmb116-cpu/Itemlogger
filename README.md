@@ -61,6 +61,13 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
   value) with the next step worth the most points; a Progress screen with every step, real money
   (sales recorded, this year's tax deductions, value of fully recorded things) and 11 badges, each
   tied to a useful habit, announced with a "Badge unlocked" banner. `src/lib/progress.ts`, unit-tested.
+- **Weekly streaks**: any week you add something or fill a gap (receipt, photo, serial, price, a sale)
+  counts; the current week never breaks a streak. A flame on Home shows the run; Progress shows the
+  last 8 weeks. `src/lib/streaks.ts`.
+- **Rooms and room quests**: each item can have a room (Living room, Kitchen, Office, Garage…), set when
+  adding, scanning or editing. The list can group by room, and Progress turns each room into a quest
+  (complete with 3+ things, all fully recorded); tapping one opens the scanner for that room.
+  15 badges in all, including streaks and rooms.
 - **Search, filters and groups**: an always-on search bar (every word must match, across name, brand,
   store, serial, notes and category), Personal / Work / Sold filters, category chips with counts, and
   a Group by category view whose sections collapse, each with its item count and total worth.
@@ -166,6 +173,6 @@ Built one at a time:
 5. ~~Depreciation estimates, work-use percentage and accountant export~~
 6. ~~Receipt scanning~~ (preview; installed app next), barcode and serial scanning, and email receipt import
 7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
-8. Rooms and locations, move mode, lending tracker, maintenance reminders
+8. ~~Rooms~~, move mode, lending tracker, maintenance reminders
 9. ~~Sync and backup~~ (Supabase); shared household and a trusted contact
 10. Home and Lock Screen widgets (next warranty to expire, total home value). Needs a development build, as Expo Go can't run widgets

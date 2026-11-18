@@ -6,7 +6,9 @@ import { ProgressRing } from '@/components/progress-ring';
 import { AppText, Row, Section } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { formatDate, formatMoney } from '@/lib/format';
-import { BADGES, CHECK_LABEL, money, pointsLabel, protection } from '@/lib/progress';
+import { BADGES, CHECK_LABEL, money, pointsLabel, protection, ROOM_DONE_MIN, roomQuests } from '@/lib/progress';
+import { roomInfo } from '@/lib/rooms';
+import { streak } from '@/lib/streaks';
 import { useStore } from '@/lib/store';
 import { useBadges } from '@/lib/use-badges';
 
@@ -21,6 +23,11 @@ export default function ProgressScreen() {
   const p = protection(items);
   const m = money(items, region, settings.depreciation);
   const earnedCount = BADGES.filter((b) => earned[b.id]).length;
+  const st = streak(settings.activity);
+  const quests = roomQuests(items);
+  const started = quests.filter((q) => q.count > 0);
+  const notStarted = quests.filter((q) => q.count === 0);
+  const sweep = (room: string) => router.push({ pathname: '/scan', params: { room } });
   const cash = (n: number) => formatMoney(n, region, { cents: false });
 
   return (
@@ -41,6 +48,77 @@ export default function ProgressScreen() {
           for electronics, appliances, tools and bikes, the serial number. Valuable things count for more.
         </AppText>
       </View>
+
+      {/* Weekly streak */}
+      <View style={[styles.streak, { backgroundColor: c.ink }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+          <Ionicons name="flame" size={30} color={st.current > 0 ? '#FF8A3D' : c.onInk} style={{ opacity: st.current > 0 ? 1 : 0.4 }} />
+          <View style={{ flex: 1 }}>
+            <AppText variant="title2" color={c.onInk}>
+              {st.current > 0 ? `${st.current}-week streak` : 'Start a streak'}
+            </AppText>
+            <AppText variant="footnote" color={c.onInk} style={{ opacity: 0.7 }}>
+              {st.thisWeek
+                ? 'Done for this week. See you next week.'
+                : 'Add something or fill a gap this week to keep it going.'}
+              {st.best > st.current ? ` Best: ${st.best} weeks.` : ''}
+            </AppText>
+          </View>
+        </View>
+        <View style={styles.dots} accessibilityLabel={`Last ${st.recent.length} weeks`}>
+          {st.recent.map((on, i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                { backgroundColor: on ? '#FF8A3D' : 'rgba(255,255,255,0.14)' },
+                i === st.recent.length - 1 && !on && { borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.5)' },
+              ]}
+            />
+          ))}
+        </View>
+      </View>
+
+      {/* Room quests */}
+      <Section
+        title="Room quests"
+        footer={`Pick a room and scan or add everything in it. A room is complete with ${ROOM_DONE_MIN}+ things, all fully recorded.`}>
+        {[...started, ...notStarted.slice(0, started.length ? 3 : 5)].map((q, i, list) => {
+          const info = roomInfo(q.room)!;
+          return (
+            <Pressable
+              key={q.room}
+              accessibilityRole="button"
+              accessibilityLabel={`${q.label}: ${q.count ? `${q.count} things, ${q.score}% recorded` : 'not started'}`}
+              onPress={() => sweep(q.room)}
+              style={({ pressed }) => [
+                styles.step,
+                { opacity: pressed ? 0.6 : 1 },
+                i < list.length - 1 && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.separator },
+              ]}>
+              <View style={[styles.stepIcon, { backgroundColor: q.done ? c.green : c.background }]}>
+                <Ionicons name={q.done ? 'checkmark' : info.icon} size={16} color={q.done ? '#fff' : c.ink} />
+              </View>
+              <View style={{ flex: 1, gap: 4 }}>
+                <AppText variant="body">{q.label}</AppText>
+                {q.count ? (
+                  <View style={[styles.bar, { backgroundColor: c.fill }]}>
+                    <View style={[styles.barFill, { width: `${q.score}%`, backgroundColor: q.done ? c.green : c.accent }]} />
+                  </View>
+                ) : (
+                  <AppText variant="caption" color={c.textSecondary}>
+                    Not started
+                  </AppText>
+                )}
+              </View>
+              <AppText variant="footnote" color={c.textSecondary} style={{ fontVariant: ['tabular-nums'] }}>
+                {q.done ? 'Complete' : q.count ? `${q.count} · ${q.score}%` : 'Start'}
+              </AppText>
+              <Ionicons name="chevron-forward" size={16} color={c.textTertiary} />
+            </Pressable>
+          );
+        })}
+      </Section>
 
       {p.steps.length > 0 ? (
         <Section
@@ -133,6 +211,11 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.xl,
     paddingBottom: Spacing.xxl,
   },
+  streak: { marginHorizontal: Spacing.lg, marginBottom: Spacing.xxl, padding: Spacing.lg, gap: Spacing.lg, borderRadius: Radius.xl, borderCurve: 'continuous' },
+  dots: { flexDirection: 'row', gap: 6 },
+  dot: { flex: 1, height: 8, borderRadius: 4 },
+  bar: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  barFill: { height: 6, borderRadius: 3 },
   step: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: 10, paddingHorizontal: Spacing.lg },
   stepIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   badgesTitle: { paddingHorizontal: Spacing.xl + 4, marginBottom: Spacing.sm },
