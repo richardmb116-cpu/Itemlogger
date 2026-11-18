@@ -99,4 +99,6 @@ export type Settings = {
   remindersPromptDismissed: boolean;
   /** Show the item list grouped by category, with sections that collapse. Per device. */
   groupByCategory: boolean;
+  /** Badges earned, by id, with when (ISO). Once earned, a badge stays earned. */
+  badges: Partial<Record<string, string>>;
 };

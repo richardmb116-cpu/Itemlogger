@@ -26,6 +26,7 @@ const settings: Settings = {
   reminderDays: [30, 7],
   remindersPromptDismissed: false,
   groupByCategory: false,
+  badges: {},
 };
 
 test('summary totals and gap warnings', () => {

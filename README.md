@@ -56,6 +56,11 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
   item with make and model, serial, purchase details, price paid, current value, warranty, photo and receipt.
   Flags gaps first (missing receipts, photos, serials) and warns when items cost more than the contents
   sum insured. Shared from the iPhone share sheet; previewed on screen in the browser.
+- **Progress (the game)**: a protection score on Home (0–100, how claim-ready everything is: photo,
+  receipt, price paid and, for electronics, appliances, tools and bikes, the serial number, weighted by
+  value) with the next step worth the most points; a Progress screen with every step, real money
+  (sales recorded, this year's tax deductions, value of fully recorded things) and 11 badges, each
+  tied to a useful habit, announced with a "Badge unlocked" banner. `src/lib/progress.ts`, unit-tested.
 - **Search, filters and groups**: an always-on search bar (every word must match, across name, brand,
   store, serial, notes and category), Personal / Work / Sold filters, category chips with counts, and
   a Group by category view whose sections collapse, each with its item count and total worth.

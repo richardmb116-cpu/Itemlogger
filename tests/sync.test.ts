@@ -67,7 +67,7 @@ test('only account-wide settings sync', async () => {
     onboarded: true, taxRegion: 'US', upgradeStyle: 'latest',
     depreciation: { auMethod: 'diminishing', auLowValuePool: false, usMethod: 'section179', showAdvanced: false },
     insurance: { insurer: 'X', policyNumber: '1', sumInsured: 5 }, remindersEnabled: true, reminderDays: DEFAULT_REMINDER_DAYS,
-    birthdaysEnabled: true, remindersPromptDismissed: true, groupByCategory: false,
+    birthdaysEnabled: true, remindersPromptDismissed: true, groupByCategory: false, badges: {},
   });
   assert.equal('onboarded' in s, false);
   assert.equal('remindersEnabled' in s, false);

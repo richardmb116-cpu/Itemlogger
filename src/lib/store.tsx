@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS: Settings = {
   reminderDays: DEFAULT_REMINDER_DAYS,
   remindersPromptDismissed: false,
   groupByCategory: false,
+  badges: {},
 };
 
 type Store = {

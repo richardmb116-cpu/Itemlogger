@@ -18,6 +18,7 @@ import {
   type ReceiptImage,
 } from '@/lib/receipt-reader';
 import { newId, useStore } from '@/lib/store';
+import { useBadges } from '@/lib/use-badges';
 
 type Stage = 'start' | 'reading' | 'review';
 
@@ -25,6 +26,7 @@ type Stage = 'start' | 'reading' | 'review';
 export default function ScanScreen() {
   const c = useColors();
   const { settings, saveItem } = useStore();
+  const { earn } = useBadges();
   const region = settings.taxRegion;
   const [available, setAvailable] = useState<boolean | null>(null);
   const [stage, setStage] = useState<Stage>('start');
@@ -90,6 +92,7 @@ export default function ScanScreen() {
     const items = itemsFromScan(scan, selected, { receiptUri, newId });
     // Save in receipt order, so the first line ends up at the top of the list.
     [...items].reverse().forEach(saveItem);
+    earn('first-scan');
     router.dismissTo('/');
     // One item: open it, so it's clear it was added. Several: they're at the top of the list.
     if (items.length === 1) setTimeout(() => router.push({ pathname: '/item/[id]', params: { id: items[0].id } }), 50);

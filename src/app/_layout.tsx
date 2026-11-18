@@ -8,6 +8,8 @@ import { kvReady, onSaveFailure } from '@/lib/storage';
 import { StoreProvider } from '@/lib/store';
 import { useReminderSync } from '@/lib/use-reminders';
 import { SyncProvider } from '@/lib/use-sync';
+import { BadgeProvider } from '@/lib/use-badges';
+import { BadgeToast } from '@/components/badge-toast';
 
 function ReminderSync() {
   useReminderSync();
@@ -47,32 +49,36 @@ export default function RootLayout() {
   return (
     <StoreProvider>
       <SyncProvider>
-        <ThemeProvider value={theme}>
-          <StatusBar style="auto" />
-          <ReminderSync />
-        <SaveFailureAlert />
-          <Stack
-            screenOptions={{
-              headerTintColor: c.ink,
-              headerTitleStyle: { fontWeight: '700' },
-              headerStyle: { backgroundColor: c.background },
-              headerShadowVisible: false,
-              contentStyle: { backgroundColor: c.background },
-            }}>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Items' }} />
-            <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
-            <Stack.Screen
-              name="item/[id]"
-              options={{ title: '', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
-            />
-            <Stack.Screen name="item/edit" options={{ presentation: 'modal', title: 'New item' }} />
-            <Stack.Screen name="item/sell" options={{ presentation: 'modal', title: 'Sell' }} />
-            <Stack.Screen name="claim" options={{ presentation: 'modal', title: 'Claim pack' }} />
-            <Stack.Screen name="accountant" options={{ presentation: 'modal', title: 'For your accountant' }} />
-            <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Sync' }} />
-          <Stack.Screen name="scan" options={{ presentation: 'modal', title: '' }} />
-          </Stack>
-        </ThemeProvider>
+        <BadgeProvider>
+          <ThemeProvider value={theme}>
+            <StatusBar style="auto" />
+            <ReminderSync />
+            <SaveFailureAlert />
+            <Stack
+              screenOptions={{
+                headerTintColor: c.ink,
+                headerTitleStyle: { fontWeight: '700' },
+                headerStyle: { backgroundColor: c.background },
+                headerShadowVisible: false,
+                contentStyle: { backgroundColor: c.background },
+              }}>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false, title: 'Items' }} />
+              <Stack.Screen name="welcome" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
+              <Stack.Screen
+                name="item/[id]"
+                options={{ title: '', headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal' }}
+              />
+              <Stack.Screen name="item/edit" options={{ presentation: 'modal', title: 'New item' }} />
+              <Stack.Screen name="item/sell" options={{ presentation: 'modal', title: 'Sell' }} />
+              <Stack.Screen name="claim" options={{ presentation: 'modal', title: 'Claim pack' }} />
+              <Stack.Screen name="accountant" options={{ presentation: 'modal', title: 'For your accountant' }} />
+              <Stack.Screen name="account" options={{ presentation: 'modal', title: 'Sync' }} />
+              <Stack.Screen name="scan" options={{ presentation: 'modal', title: '' }} />
+              <Stack.Screen name="progress" options={{ presentation: 'modal', title: 'Your progress' }} />
+            </Stack>
+            <BadgeToast />
+          </ThemeProvider>
+        </BadgeProvider>
       </SyncProvider>
     </StoreProvider>
   );

@@ -7,6 +7,7 @@ import { Pressable, ScrollView, SectionList, StyleSheet, TextInput, View } from 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ItemCard, ItemRow, ItemThumb } from '@/components/item-bits';
+import { ProgressRing } from '@/components/progress-ring';
 import { AppText, Chip, IconButton, SectionHeading, tap } from '@/components/ui';
 import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
 import { ordinal, upcomingBirthdays } from '@/lib/birthdays';
@@ -14,6 +15,7 @@ import { CATEGORIES, categoryInfo } from '@/lib/categories';
 import { categoryCounts, filterItems, groupByCategory, type UseFilter } from '@/lib/item-filter';
 import { formatMoney } from '@/lib/format';
 import { HOME_HERO_PHOTO } from '@/lib/photos';
+import { CHECK_LABEL, pointsLabel, protection } from '@/lib/progress';
 import { explainBlockedNotifications } from '@/lib/reminder-alerts';
 import { sortRecent, useStore } from '@/lib/store';
 import { sellPlan } from '@/lib/upgrade';
@@ -66,6 +68,8 @@ export default function ItemsScreen() {
         !!r.plan && (r.plan.status === 'window' || r.plan.status === 'late'),
     );
   const sellStatuses = new Map(readyToSell.map((r) => [r.item.id, r.plan.status]));
+  const prot = protection(items);
+  const nextStep = prot.steps[0];
   const q = query.trim();
   const visible = filterItems(sorted, { query, category, use });
   // Category chips count what the other filters leave, so the numbers match what a tap shows.
@@ -209,6 +213,32 @@ export default function ItemsScreen() {
               </View>
             </View>
           </View>
+
+          {/* Protection: how claim-ready everything is, and the best next step */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Protection score ${prot.score}. See your progress`}
+            onPress={() => {
+              tap();
+              router.push('/progress');
+            }}
+            style={({ pressed }) => [styles.protect, { backgroundColor: c.card, opacity: pressed ? 0.85 : 1 }]}>
+            <ProgressRing score={prot.score} size={64} stroke={7} />
+            <View style={{ flex: 1, gap: 2 }}>
+              <AppText variant="eyebrow" color={c.textSecondary}>
+                Protection
+              </AppText>
+              <AppText variant="headline">
+                {prot.score >= 100 ? 'Everything is claim-ready' : `${prot.score}% claim-ready`}
+              </AppText>
+              <AppText variant="footnote" color={c.textSecondary} numberOfLines={1}>
+                {nextStep
+                  ? `Next: ${CHECK_LABEL[nextStep.check].add.toLowerCase()} · ${nextStep.name} ${pointsLabel(nextStep.points)}`
+                  : 'Badges, money and next steps'}
+              </AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={c.textTertiary} />
+          </Pressable>
 
           {showReminderPrompt ? (
             <View style={[styles.prompt, { backgroundColor: c.ink }]}>
@@ -488,6 +518,17 @@ const styles = StyleSheet.create({
   birthdayRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   shelf: { gap: Spacing.md, paddingHorizontal: Spacing.lg, marginBottom: Spacing.xxl },
   chips: { gap: Spacing.sm, paddingHorizontal: Spacing.xl, marginBottom: Spacing.sm },
+  protect: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    marginHorizontal: Spacing.lg,
+    marginBottom: Spacing.xxl,
+    padding: Spacing.md,
+    paddingRight: Spacing.lg,
+    borderRadius: Radius.xl,
+    borderCurve: 'continuous',
+  },
   groupHead: {
     flexDirection: 'row',
     alignItems: 'center',
