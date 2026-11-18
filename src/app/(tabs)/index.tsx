@@ -13,6 +13,7 @@ import { OnPhoto, Radius, Spacing, useColors } from '@/constants/theme';
 import { ordinal, upcomingBirthdays } from '@/lib/birthdays';
 import { CATEGORIES, categoryInfo } from '@/lib/categories';
 import { categoryCounts, filterItems, groupByCategory, groupByRoom, type UseFilter } from '@/lib/item-filter';
+import { returnStatus } from '@/lib/returns';
 import { roomInfo } from '@/lib/rooms';
 import { streak } from '@/lib/streaks';
 import { formatMoney } from '@/lib/format';
@@ -55,6 +56,7 @@ export default function ItemsScreen() {
   const expiring = owned
     .filter((i) => statuses.get(i.id)?.state === 'expiring')
     .sort((a, b) => (statuses.get(a.id)?.daysLeft ?? 0) - (statuses.get(b.id)?.daysLeft ?? 0));
+  const returning = owned.filter((i) => returnStatus(i).state === 'closing');
   const covered = owned.filter((i) => {
     const s = statuses.get(i.id)?.state;
     return s === 'active' || s === 'expiring';
@@ -344,10 +346,19 @@ export default function ItemsScreen() {
           ) : null}
 
           {/* Needs attention: warranties about to end, then things worth selling now */}
-          {(expiring.length > 0 || readyToSell.length > 0) && !category && !use ? (
+          {(returning.length > 0 || expiring.length > 0 || readyToSell.length > 0) && !category && !use ? (
             <>
               <SectionHeading title="Needs attention" />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.shelf}>
+                {returning.map((item) => (
+                  <ItemCard
+                    key={`r-${item.id}`}
+                    item={item}
+                    detail={returnStatus(item).label}
+                    action="Return or keep?"
+                    onPress={() => open(item.id)}
+                  />
+                ))}
                 {expiring.map((item) => (
                   <ItemCard
                     key={`w-${item.id}`}

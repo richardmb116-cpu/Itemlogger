@@ -6,6 +6,8 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text
 
 import { DateField } from '@/components/date-field';
 import { RoomPicker } from '@/components/room-picker';
+import { cardExtension, cardInfo, CARDS } from '@/lib/cards';
+import { RETURN_OPTIONS } from '@/lib/returns';
 import { AppText, Chip, Row, Section, Segmented, tap } from '@/components/ui';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { CATEGORIES } from '@/lib/categories';
@@ -42,6 +44,10 @@ export default function EditItemScreen() {
   const [store, setStore] = useState(existing?.store ?? '');
   const [serial, setSerial] = useState(existing?.serial ?? '');
   const [warrantyMonths, setWarrantyMonths] = useState<number | null>(existing ? existing.warrantyMonths : 12);
+  const [paidWith, setPaidWith] = useState<string | null>(existing?.paidWith ?? null);
+  const [returnDays, setReturnDays] = useState<number | null>(existing?.returnDays ?? null);
+  const card = cardInfo(paidWith);
+  const extra = cardExtension({ warrantyMonths, paidWith });
   const [use, setUse] = useState<ItemUse>(existing?.use ?? 'personal');
   const [room, setRoom] = useState<string | null>(existing?.room ?? (typeof params.room === 'string' ? params.room : null));
   const [workPercent, setWorkPercent] = useState(String(existing?.workPercent ?? 100));
@@ -79,6 +85,8 @@ export default function EditItemScreen() {
       workPercent: clampPercent(workPercent),
       effectiveLifeYears: parseLife(lifeYears),
       room,
+      paidWith,
+      returnDays,
       condition,
       checkedPrice: existing?.checkedPrice ?? null,
       sold: existing?.sold ?? null,
@@ -206,6 +214,43 @@ export default function EditItemScreen() {
               />
             ))}
             {isCustomWarranty ? <Chip label={`${warrantyMonths} mo`} selected onPress={() => {}} /> : null}
+          </ScrollView>
+        </Section>
+
+        <Section
+          title="Paid with"
+          footer={
+            !card
+              ? 'Many credit cards add a year to the maker’s warranty when you pay with them.'
+              : extra
+                ? `${card.note} Adds ${extra / 12} year to this warranty. Confirm in your card’s benefits guide; claims go through the card.`
+                : warrantyMonths
+                  ? `${card.note} This warranty is longer than the card covers.`
+                  : `${card.note} Cards extend a maker’s warranty, so add the warranty above.`
+          }>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.warrantyChips}>
+            <Chip label="No card cover" selected={paidWith === null} onPress={() => setPaidWith(null)} />
+            {CARDS.map((c) => (
+              <Chip key={c.id} label={c.label} selected={paidWith === c.id} onPress={() => setPaidWith(c.id)} />
+            ))}
+          </ScrollView>
+        </Section>
+
+        <Section
+          title="Return window"
+          footer={
+            returnDays
+              ? `Get a reminder before it closes, while you can still return it or claim a price drop.`
+              : 'How long the store gives you to change your mind. Often printed on the receipt.'
+          }>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.warrantyChips}>
+            <Chip label="None" selected={returnDays === null} onPress={() => setReturnDays(null)} />
+            {RETURN_OPTIONS.map((d) => (
+              <Chip key={d} label={d === 365 ? '1 year' : `${d} days`} selected={returnDays === d} onPress={() => setReturnDays(d)} />
+            ))}
+            {returnDays && !RETURN_OPTIONS.includes(returnDays) ? (
+              <Chip label={`${returnDays} days`} selected onPress={() => {}} />
+            ) : null}
           </ScrollView>
         </Section>
 

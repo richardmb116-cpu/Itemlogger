@@ -8,6 +8,14 @@ warranties, serial numbers and which tax year each purchase falls in (Australian
 ## What's in it today
 
 - **Items**: photo, receipt photo, price, purchase date, store, serial number, category, notes.
+- **Credit card extended warranty**: record the card you paid with (Visa Signature/Infinite incl. most
+  Chase cards: +1 yr on warranties up to 3 yrs; American Express with an annual fee: +1 yr up to 5 yrs;
+  or another card) and the warranty, reminders and claim pack include the extra year. It's never shown
+  to buyers (listings and resale value use the maker's warranty only). Terms vary: confirm in the card's
+  benefits guide. `src/lib/cards.ts`.
+- **Return windows**: set the store's return period (14/30/60/90 days or a year; read off the receipt
+  when it's printed). In the last week the item shows on Home under Needs attention and gets a pill in
+  the list, with a reminder two days before it closes: return it, or check for a price drop.
 - **Receipt scanning**: snap or choose a photo of a receipt and every product on it is listed
   separately (a "2 ×" line becomes two items), with tax, fees and groceries set aside. Tick the ones
   to add; each gets the store, date, price, a starting warranty and the receipt photo. Claude reads
@@ -172,7 +180,7 @@ Built one at a time:
    server (stage 2) and opt-in shared sale prices (stage 3)
 5. ~~Depreciation estimates, work-use percentage and accountant export~~
 6. ~~Receipt scanning~~ (preview; installed app next), barcode and serial scanning, and email receipt import
-7. Recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
+7. ~~Card extended warranty~~, ~~return windows~~, recall alerts, manual auto-fetch, Australian Consumer Law guarantee hints
 8. ~~Rooms~~, move mode, lending tracker, maintenance reminders
 9. ~~Sync and backup~~ (Supabase); shared household and a trusted contact
 10. Home and Lock Screen widgets (next warranty to expire, total home value). Needs a development build, as Expo Go can't run widgets

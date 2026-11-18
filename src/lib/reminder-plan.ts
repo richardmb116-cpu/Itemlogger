@@ -3,6 +3,7 @@ import { parseISODate } from './dates';
 import { formatMoney } from './format';
 import type { Item, TaxRegion } from './types';
 import { currentValue } from './valuation';
+import { returnStatus } from './returns';
 import { warrantyStatus } from './warranty';
 
 /** Lead times users can pick, in days before the warranty ends. 0 = on the day. */
@@ -51,8 +52,24 @@ export function planReminders(items: Item[], leadDays: number[], now = new Date(
         itemId: item.id,
         date,
         title: titleFor(item.name, lead),
-        body: bodyFor(lead),
+        body: status.cardMonths ? `${bodyFor(lead)} This is the extra year from your card, so claim through the card.` : bodyFor(lead),
       });
+    }
+
+    // Two days before a store's return window closes: return it, or check for a price drop.
+    const ret = returnStatus(item, now);
+    if (ret.closes && (ret.state === 'open' || ret.state === 'closing')) {
+      const end = parseISODate(ret.closes);
+      const date = new Date(end.getFullYear(), end.getMonth(), end.getDate() - 2, REMINDER_HOUR, 0, 0, 0);
+      if (date.getTime() > now.getTime()) {
+        plan.push({
+          id: `return-${item.id}`,
+          itemId: item.id,
+          date,
+          title: `${item.name}: return window closes in 2 days`,
+          body: 'Not happy with it? Return it now. Happy? Check the price: if it’s dropped, many stores refund the difference.',
+        });
+      }
     }
   }
 

@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { RoomPicker } from '@/components/room-picker';
-import { AppText, PrimaryButton, Row, Section, Segmented, tap } from '@/components/ui';
+import { AppText, Chip, PrimaryButton, Row, Section, Segmented, tap } from '@/components/ui';
+import { cardInfo, CARDS } from '@/lib/cards';
+import { RETURN_OPTIONS } from '@/lib/returns';
 import { Radius, Spacing, useColors } from '@/constants/theme';
 import { categoryInfo } from '@/lib/categories';
 import { formatDate, formatMoney, parsePrice } from '@/lib/format';
@@ -31,6 +33,7 @@ export default function ScanScreen() {
   // A room quest opens the scanner for one room.
   const params = useLocalSearchParams<{ room?: string }>();
   const [room, setRoom] = useState<string | null>(typeof params.room === 'string' ? params.room : null);
+  const [paidWith, setPaidWith] = useState<string | null>(null);
   const region = settings.taxRegion;
   const [available, setAvailable] = useState<boolean | null>(null);
   const [stage, setStage] = useState<Stage>('start');
@@ -93,7 +96,7 @@ export default function ScanScreen() {
     if (!scan || !image || selected.size === 0) return;
     setSaving(true);
     const receiptUri = await storeReceipt(image).catch(() => null);
-    const items = itemsFromScan(scan, selected, { receiptUri, newId, room });
+    const items = itemsFromScan(scan, selected, { receiptUri, newId, room, paidWith });
     // Save in receipt order, so the first line ends up at the top of the list.
     [...items].reverse().forEach(saveItem);
     earn('first-scan');
@@ -162,6 +165,28 @@ export default function ScanScreen() {
 
           <Section title="Room" footer="Where these live. Optional.">
             <RoomPicker value={room} onChange={setRoom} />
+          </Section>
+
+          <Section
+            title="Paid with"
+            footer={paidWith ? `${cardInfo(paidWith)!.note} Applied to items with a maker’s warranty.` : 'Many credit cards add a year to the maker’s warranty.'}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow} keyboardShouldPersistTaps="handled">
+              <Chip label="No card cover" selected={paidWith === null} onPress={() => setPaidWith(null)} />
+              {CARDS.map((card) => (
+                <Chip key={card.id} label={card.label} selected={paidWith === card.id} onPress={() => setPaidWith(card.id)} />
+              ))}
+            </ScrollView>
+          </Section>
+
+          <Section
+            title="Return window"
+            footer={scan.returnDays ? 'You’ll get a reminder before it closes.' : 'Not printed on the receipt. Pick one if you know it.'}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipRow} keyboardShouldPersistTaps="handled">
+              <Chip label="None" selected={scan.returnDays === null} onPress={() => setScan({ ...scan, returnDays: null })} />
+              {[...new Set([...RETURN_OPTIONS, ...(scan.returnDays ? [scan.returnDays] : [])])].sort((a, b) => a - b).map((d) => (
+                <Chip key={d} label={d === 365 ? '1 year' : `${d} days`} selected={scan.returnDays === d} onPress={() => setScan({ ...scan, returnDays: d })} />
+              ))}
+            </ScrollView>
           </Section>
 
           {worth.length > 0 ? (
@@ -322,6 +347,7 @@ const styles = StyleSheet.create({
   check: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 16, fontWeight: '600', paddingVertical: 0 },
   price: { width: 84, textAlign: 'right', fontSize: 16, fontVariant: ['tabular-nums'], paddingVertical: 4 },
+  chipRow: { gap: Spacing.sm, padding: Spacing.md },
   note: { paddingHorizontal: Spacing.xl, lineHeight: 18 },
   useRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.md, paddingHorizontal: Spacing.lg, paddingVertical: 10 },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 6 },

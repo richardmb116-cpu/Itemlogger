@@ -8,7 +8,7 @@ import type { Item } from '../src/lib/types';
 function item(over: Partial<Item>): Item {
   return {
     id: over.name ?? 'x', name: 'Thing', model: '', category: 'other', price: 100, purchaseDate: '2026-01-01', store: '',
-    serial: '', warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, room: null, condition: 'good',
+    serial: '', warrantyMonths: null, use: 'personal', workPercent: 100, effectiveLifeYears: null, room: null, paidWith: null, returnDays: null, condition: 'good',
     checkedPrice: null, sold: null, notes: '', photoUri: null, receiptUri: null, createdAt: '', updatedAt: '', ...over,
   };
 }

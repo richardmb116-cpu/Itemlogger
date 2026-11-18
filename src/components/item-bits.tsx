@@ -9,6 +9,7 @@ import { ageOf } from '@/lib/birthdays';
 import { formatDate, formatMoney } from '@/lib/format';
 import { itemPhoto } from '@/lib/photos';
 import type { Item, TaxRegion } from '@/lib/types';
+import { returnStatus } from '@/lib/returns';
 import type { SellStatus } from '@/lib/upgrade';
 import { currentValue } from '@/lib/valuation';
 import { warrantyStatus, type WarrantyState } from '@/lib/warranty';
@@ -35,6 +36,20 @@ export function WarrantyPill({ item }: { item: Item }) {
       <Ionicons name={col.icon} size={12} color={col.fg} />
       <AppText variant="caption" color={col.fg} style={{ fontWeight: '600' }}>
         {status.label}
+      </AppText>
+    </View>
+  );
+}
+
+/** Shown in the last week of a store's return window. */
+function ReturnPill({ item }: { item: Item }) {
+  const c = useColors();
+  const days = returnStatus(item).daysLeft ?? 0;
+  return (
+    <View style={[styles.pill, { backgroundColor: c.orangeSoft }]}>
+      <Ionicons name="return-down-back" size={11} color={c.orange} />
+      <AppText variant="caption" color={c.orange} style={{ fontWeight: '600' }}>
+        {days === 0 ? 'Last day to return' : `Return: ${days}d left`}
       </AppText>
     </View>
   );
@@ -107,6 +122,7 @@ export function ItemRow({
             .join(' · ')}
         </AppText>
         <View style={styles.rowBadges}>
+          {returnStatus(item).state === 'closing' ? <ReturnPill item={item} /> : null}
           {sellStatus === 'window' || sellStatus === 'late' ? <SellPill late={sellStatus === 'late'} /> : null}
           {item.sold ? null : <WarrantyPill item={item} />}
           {item.use === 'work' ? (

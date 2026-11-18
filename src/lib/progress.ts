@@ -1,5 +1,6 @@
 import { accountantRows } from './accountant-export';
 import { ageOf } from './birthdays';
+import { cardExtension } from './cards';
 import { ROOMS } from './rooms';
 import { streak } from './streaks';
 import { taxYearFor } from './tax';
@@ -93,6 +94,8 @@ export type Money = {
   deductions: number;
   /** Current value of everything with full records: what a claim could recover without argument. */
   protectedValue: number;
+  /** Things with a year (or more) of warranty added by the card they were paid with. */
+  cardExtended: number;
 };
 
 export function money(items: Item[], region: TaxRegion, dep: DepreciationSettings, today = new Date()): Money {
@@ -107,6 +110,7 @@ export function money(items: Item[], region: TaxRegion, dep: DepreciationSetting
     soldCount: soldItems.length,
     deductions,
     protectedValue,
+    cardExtended: items.filter((i) => !i.sold && cardExtension(i) > 0).length,
   };
 }
 
@@ -144,7 +148,8 @@ export type BadgeId =
   | 'streak-4'
   | 'streak-12'
   | 'room-done'
-  | 'rooms-3';
+  | 'rooms-3'
+  | 'card-year';
 
 export type Badge = { id: BadgeId; title: string; how: string; icon: string };
 
@@ -164,6 +169,7 @@ export const BADGES: Badge[] = [
   { id: 'streak-12', title: 'Creature of habit', how: 'Keep a 12-week streak.', icon: 'bonfire' },
   { id: 'room-done', title: 'Room complete', how: `Fully record 3+ things in one room.`, icon: 'home' },
   { id: 'rooms-3', title: 'Room by room', how: 'Complete 3 rooms.', icon: 'business' },
+  { id: 'card-year', title: 'Free extra year', how: 'Get a year of warranty from the card you paid with.', icon: 'card' },
 ];
 
 /** Badges the current data qualifies for. Events that leave no trace in the data (a scan) are passed in. */
@@ -188,6 +194,7 @@ export function qualifyingBadges(
   const work = owned.filter((i) => i.use === 'work');
   if (work.length >= 1 && work.every((i) => !!i.receiptUri)) earned.add('tax-ready');
   if (owned.some((i) => ageOf(i.purchaseDate, today).years >= 5)) earned.add('birthday-club');
+  if (owned.some((i) => cardExtension(i) > 0)) earned.add('card-year');
 
   const s = streak(ctx.weeks ?? [], today);
   if (Math.max(s.current, s.best) >= 4) earned.add('streak-4');

@@ -31,3 +31,7 @@ export function daysBetween(from: Date, to: Date): number {
   const b = Date.UTC(to.getFullYear(), to.getMonth(), to.getDate());
   return Math.round((b - a) / DAY_MS);
 }
+
+export function addDays(date: Date, days: number): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
+}

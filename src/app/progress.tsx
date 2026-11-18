@@ -157,7 +157,7 @@ export default function ProgressScreen() {
 
       <Section
         title="Your money"
-        footer="Sales you’ve recorded, this tax year’s estimated deductions on work items, and what your fully recorded things are worth today.">
+        footer="Sales you’ve recorded, this tax year’s estimated deductions on work items, what your fully recorded things are worth today, and warranty your credit cards add for free.">
         <Row
           label="Sold for"
           icon="bag-check-outline"
@@ -168,7 +168,13 @@ export default function ProgressScreen() {
           icon="briefcase-outline"
           value={m.deductions > 0 ? cash(m.deductions) : '—'}
         />
-        <Row label="Fully protected value" icon="shield-checkmark-outline" value={cash(m.protectedValue)} last />
+        <Row label="Fully protected value" icon="shield-checkmark-outline" value={cash(m.protectedValue)} />
+        <Row
+          label="Extra warranty from cards"
+          icon="card-outline"
+          value={m.cardExtended ? `${m.cardExtended} thing${m.cardExtended === 1 ? '' : 's'} · +1 yr each` : '—'}
+          last
+        />
       </Section>
 
       <AppText variant="eyebrow" color={c.textSecondary} style={styles.badgesTitle}>

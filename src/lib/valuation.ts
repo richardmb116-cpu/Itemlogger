@@ -92,7 +92,7 @@ export function roundPrice(value: number): number {
 export function valueItem(item: ValueItem, today = new Date()): Valuation | null {
   if (item.price == null || item.price <= 0) return null;
   const ageYears = Math.max(0, daysBetween(parseISODate(item.purchaseDate), today) / 365.25);
-  const warranty = warrantyStatus(item, today);
+  const warranty = warrantyStatus({ ...item, paidWith: null }, today);
   const warrantyBonus = (warranty.state === 'active' || warranty.state === 'expiring') && warrantyBonusAt(item, ageYears) > 0;
   const p = profileFor(item);
   const range = RANGE[p.evidence];

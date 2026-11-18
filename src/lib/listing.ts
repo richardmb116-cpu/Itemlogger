@@ -17,7 +17,8 @@ export function buildListing(item: Item, askingPrice: number | null, region: Tax
     month: 'long',
     year: 'numeric',
   });
-  const warranty = warrantyStatus(item, today);
+  // A card's extended warranty doesn't pass to a buyer.
+  const warranty = warrantyStatus({ ...item, paidWith: null }, today);
 
   const lines = [
     `${item.name}, bought new${item.store ? ` from ${item.store}` : ''} in ${bought}.`,

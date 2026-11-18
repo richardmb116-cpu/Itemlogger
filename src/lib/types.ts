@@ -43,6 +43,10 @@ export type Item = {
   serial: string;
   /** Manufacturer warranty length in months; null when there is none. */
   warrantyMonths: number | null;
+  /** The card it was paid with (cards.ts id), for credit card extended warranty; null if none. */
+  paidWith: string | null;
+  /** The store's return window in days; null if unknown or none. */
+  returnDays: number | null;
   use: ItemUse;
   /** Share of use that's for work, 1–100. Only applies when use is "work". */
   workPercent: number;

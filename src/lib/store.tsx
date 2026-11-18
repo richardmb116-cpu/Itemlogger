@@ -70,6 +70,8 @@ function normalize(item: Partial<Item> & Pick<Item, 'id'>): Item {
     workPercent: 100,
     effectiveLifeYears: null,
     room: null,
+    paidWith: null,
+    returnDays: null,
     ...item,
   } as Item;
 }
@@ -206,10 +208,12 @@ function sampleItems(region: TaxRegion): Item[] {
     checkedPrice: null,
     sold: null,
     effectiveLifeYears: null,
+    paidWith: null,
+    returnDays: null,
     createdAt: stamp,
     updatedAt: stamp,
   };
-  const rows: (Omit<Item, 'id' | 'notes' | 'photoUri' | 'receiptUri' | 'checkedPrice' | 'sold' | 'effectiveLifeYears' | 'createdAt' | 'updatedAt'> & { photoUri?: string })[] = [
+  const rows: (Omit<Item, 'id' | 'notes' | 'photoUri' | 'receiptUri' | 'checkedPrice' | 'sold' | 'effectiveLifeYears' | 'paidWith' | 'returnDays' | 'createdAt' | 'updatedAt'> & { photoUri?: string })[] = [
     { room: 'office', name: 'MacBook Pro 14"', photoUri: bundledUri('laptop'), model: 'Apple MacBook Pro 14 M4', category: 'electronics', price: 3299, purchaseDate: ago(4), store: 'Apple Store', serial: 'C02XK1J2MD6R', warrantyMonths: 24, condition: 'like-new', workPercent: 80, use: 'work' },
     { room: 'storage', name: 'Dyson V15 Detect', model: 'Dyson V15 Detect Absolute', category: 'appliances', price: 1249, purchaseDate: ago(23, 3), store: us ? 'Best Buy' : 'JB Hi-Fi', serial: 'SV22-AU-48120', warrantyMonths: 24, condition: 'good', workPercent: 100, use: 'personal' },
     { room: 'office', name: 'Herman Miller Aeron', photoUri: bundledUri('chair'), model: 'Herman Miller Aeron size B', category: 'furniture', price: 2150, purchaseDate: ago(14), store: us ? 'Design Within Reach' : 'Living Edge', serial: 'AER1B23DW', warrantyMonths: 144, condition: 'good', workPercent: 100, use: 'work' },

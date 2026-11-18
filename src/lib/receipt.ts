@@ -22,6 +22,8 @@ export type ReceiptScan = {
   lines: ReceiptLine[];
   /** The receipt's grand total, if printed, for a sanity check against the lines. */
   total: number | null;
+  /** Days to return, when the receipt prints a return policy. */
+  returnDays: number | null;
 };
 
 const CATEGORIES: Category[] = ['electronics', 'appliances', 'furniture', 'tools', 'kitchen', 'jewellery', 'sports', 'clothing', 'other'];
@@ -35,7 +37,7 @@ export function receiptPrompt(region: TaxRegion, today = new Date()): string {
     'so each product can be added to a home inventory (warranties, resale value, insurance).',
     '',
     'Reply with only this JSON, no other text:',
-    '{"store": string|null, "date": "YYYY-MM-DD"|null, "total": number|null, "items": [',
+    '{"store": string|null, "date": "YYYY-MM-DD"|null, "total": number|null, "returnDays": integer|null, "items": [',
     '  {"name": string, "model": string, "quantity": integer, "unitPrice": number|null, "category": string, "durable": boolean}',
     ']}',
     '',
@@ -50,9 +52,10 @@ export function receiptPrompt(region: TaxRegion, today = new Date()): string {
     '  sports gear, kitchen gear, clothing or shoes over about $40); false for food, groceries, cleaning',
     '  supplies, batteries, cables under $15, gift cards, services, delivery, warranties sold separately and bags.',
     '- Leave out subtotal, tax, GST, tips, payment, change, loyalty and rounding lines entirely.',
+    '- returnDays: if the receipt prints a return or refund period ("returns within 30 days"), that number of days; else null.',
     `- date: the purchase date. Today is ${toISODate(today)}; receipts are never in the future.`,
     `- Prices are in ${region === 'AU' ? 'Australian' : 'US'} dollars unless the receipt clearly says otherwise.`,
-    '- If the photo is not a receipt or is unreadable, reply {"store": null, "date": null, "total": null, "items": []}.',
+    '- If the photo is not a receipt or is unreadable, reply {"store": null, "date": null, "total": null, "returnDays": null, "items": []}.',
   ].join('\n');
 }
 
@@ -96,7 +99,9 @@ export function normalizeScan(raw: unknown, today = new Date()): ReceiptScan {
       });
     }
   });
-  return { store: str(r.store, 60), date: isoDate(r.date, today), total: money(r.total), lines };
+  const days = Math.round(Number(r.returnDays));
+  const returnDays = Number.isFinite(days) && days >= 1 && days <= 730 ? days : null;
+  return { store: str(r.store, 60), date: isoDate(r.date, today), total: money(r.total), returnDays, lines };
 }
 
 /** A usual maker's warranty to start from; the person can change it on the item. */
@@ -108,7 +113,7 @@ function defaultWarranty(category: Category): number | null {
 export function itemsFromScan(
   scan: ReceiptScan,
   selected: Set<string>,
-  opts: { receiptUri: string | null; newId: () => string; today?: Date; room?: string | null },
+  opts: { receiptUri: string | null; newId: () => string; today?: Date; room?: string | null; paidWith?: string | null },
 ): Item[] {
   const now = new Date().toISOString();
   const date = scan.date ?? toISODate(opts.today ?? new Date());
@@ -128,6 +133,8 @@ export function itemsFromScan(
       workPercent: 100,
       effectiveLifeYears: null,
       room: opts.room ?? null,
+      paidWith: opts.paidWith ?? null,
+      returnDays: scan.returnDays,
       condition: 'like-new',
       checkedPrice: null,
       sold: null,

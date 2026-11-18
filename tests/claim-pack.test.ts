@@ -10,7 +10,7 @@ const today = new Date(2026, 10, 14);
 function item(over: Partial<Item>): Item {
   return {
     id: 'a', name: 'Laptop', model: 'Acme 14', category: 'electronics', price: 2000, purchaseDate: '2026-01-10',
-    store: 'Shop', serial: 'SN-1', warrantyMonths: 12, use: 'personal', workPercent: 100, effectiveLifeYears: null, room: null, condition: 'good', checkedPrice: null,
+    store: 'Shop', serial: 'SN-1', warrantyMonths: 12, use: 'personal', workPercent: 100, effectiveLifeYears: null, room: null, paidWith: null, returnDays: null, condition: 'good', checkedPrice: null,
     sold: null, notes: '', photoUri: 'file://p.jpg', receiptUri: 'file://r.jpg', createdAt: '', updatedAt: '', ...over,
   };
 }

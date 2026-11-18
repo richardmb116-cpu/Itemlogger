@@ -16,6 +16,8 @@ import { todayISO, toISODate } from '@/lib/dates';
 import { planReminders } from '@/lib/reminder-plan';
 import { itemPhoto, photoSource } from '@/lib/photos';
 import { useStore } from '@/lib/store';
+import { cardInfo } from '@/lib/cards';
+import { returnStatus } from '@/lib/returns';
 import { roomInfo } from '@/lib/rooms';
 import { sellPlan } from '@/lib/upgrade';
 import { deductionFor, depreciationSchedule } from '@/lib/depreciation';
@@ -47,6 +49,7 @@ export default function ItemDetailScreen() {
   const birthday = nextBirthday(item.purchaseDate);
   const birthdayToday = !item.sold && birthday.daysUntil === 0;
   const status = warrantyStatus(item);
+  const ret = returnStatus(item);
   const col = warrantyColors(status.state, c);
   const nextReminder = settings.remindersEnabled ? planReminders([item], settings.reminderDays)[0] : undefined;
   const edit = () => router.push({ pathname: '/item/edit', params: { id: item.id } });
@@ -213,7 +216,7 @@ export default function ItemDetailScreen() {
               <AppText variant="headline">{status.label}</AppText>
               <AppText variant="footnote" color={c.textSecondary}>
                 {status.expires
-                  ? `${warrantyLengthLabel(item.warrantyMonths)} warranty · ${status.state === 'expired' ? 'ended' : 'ends'} ${formatDate(status.expires, region)}`
+                  ? `${warrantyLengthLabel(item.warrantyMonths)} warranty${status.cardMonths ? ` + ${warrantyLengthLabel(status.cardMonths)} from your card` : ''} · ${status.state === 'expired' ? 'ended' : 'ends'} ${formatDate(status.expires, region)}`
                   : 'Add a warranty length to get reminders.'}
               </AppText>
             </View>
@@ -221,6 +224,23 @@ export default function ItemDetailScreen() {
           {status.expires ? (
             <View style={[styles.track, { backgroundColor: c.raised }]}>
               <View style={[styles.trackFill, { width: `${Math.round(status.progress * 100)}%`, backgroundColor: col.fg }]} />
+            </View>
+          ) : null}
+          {status.cardMonths && status.makerExpires ? (
+            <View style={styles.reminderLine}>
+              <Ionicons name="card" size={14} color={c.accent} />
+              <AppText variant="footnote" color={c.textSecondary} style={{ flex: 1 }}>
+                {cardInfo(item.paidWith)?.label}: claim through the card after the maker’s warranty ends{' '}
+                {formatDate(status.makerExpires, region)}.
+              </AppText>
+            </View>
+          ) : null}
+          {ret.state === 'open' || ret.state === 'closing' ? (
+            <View style={styles.reminderLine}>
+              <Ionicons name="return-down-back" size={14} color={ret.state === 'closing' ? c.orange : c.accent} />
+              <AppText variant="footnote" color={ret.state === 'closing' ? c.orange : c.textSecondary} style={{ flex: 1 }}>
+                {ret.label} (until {formatDate(ret.closes!, region)}). Check the price too: if it’s dropped, many stores refund the difference.
+              </AppText>
             </View>
           ) : null}
           {nextReminder ? (

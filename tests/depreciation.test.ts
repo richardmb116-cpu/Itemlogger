@@ -10,7 +10,7 @@ const au: DepreciationSettings = { auMethod: 'diminishing', auLowValuePool: fals
 function item(over: Partial<Item>): Item {
   return {
     id: 'x', name: 'MacBook Pro', model: '', category: 'electronics', price: 3299, purchaseDate: '2026-07-12',
-    store: '', serial: '', warrantyMonths: null, use: 'work', workPercent: 100, effectiveLifeYears: null, room: null,
+    store: '', serial: '', warrantyMonths: null, use: 'work', workPercent: 100, effectiveLifeYears: null, room: null, paidWith: null, returnDays: null,
     condition: 'good', checkedPrice: null, sold: null, notes: '', photoUri: null, receiptUri: null,
     createdAt: '', updatedAt: '', ...over,
   };
